@@ -5,10 +5,9 @@ pub mod initialize;
 pub mod referral;
 pub mod swap;
 
-// Re-export account structs (no naming conflicts)
-pub use buy_sell::{Buy, BuyParams, Sell, SellParams};
-pub use claim_fees::{ClaimCreatorFees, ClaimCuratorFees, ClaimInviterFees, SetCreator};
-pub use create_pool::{CreatePool, CreatePoolParams};
-pub use initialize::{Initialize, InitializeParams, UpdateConfig, UpdateConfigParams};
-pub use referral::RegisterReferral;
-pub use swap::{Swap, SwapParams};
+pub use buy_sell::*;
+pub use claim_fees::*;
+pub use create_pool::*;
+pub use initialize::*;
+pub use referral::*;
+pub use swap::*;
