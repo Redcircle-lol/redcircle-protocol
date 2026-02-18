@@ -24,13 +24,13 @@ pub enum PoolStatus {
     Paused,
 }
 
-/// Red Post Pool - represents a tokenized Reddit post
-/// PDA Seed: ["pool", reddit_post_id.as_bytes()]
+/// Red Post Pool - represents a tokenized post
+/// PDA Seed: ["pool", post_id.as_bytes()]
 #[account]
 #[derive(InitSpace)]
 pub struct Pool {
     #[max_len(16)]
-    pub reddit_post_id: String,
+    pub post_id: String,
     pub token_mint: Pubkey,
     pub curator: Pubkey,
     pub creator: Pubkey,
@@ -65,7 +65,7 @@ pub struct Pool {
 
 impl Pool {
     pub const SIZE: usize = 8 + // discriminator
-        4 + MAX_REDDIT_POST_ID_LEN + // reddit_post_id
+        4 + MAX_POST_ID_LEN + // post_id
         32 + // token_mint
         32 + // curator
         32 + // creator

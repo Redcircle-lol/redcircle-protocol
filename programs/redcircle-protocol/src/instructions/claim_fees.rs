@@ -5,7 +5,7 @@ use crate::error::RedCircleError;
 use crate::state::{Pool, InviterStats};
 
 /// Claim creator fees from a pool
-/// Only callable by the verified creator (Reddit post author)
+/// Only callable by the verified creator (post author)
 #[derive(Accounts)]
 pub struct ClaimCreatorFees<'info> {
     /// The creator claiming fees (must be verified)
@@ -15,7 +15,7 @@ pub struct ClaimCreatorFees<'info> {
     /// The pool to claim from
     #[account(
         mut,
-        seeds = [POOL_SEED, pool.reddit_post_id.as_bytes()],
+        seeds = [POOL_SEED, pool.post_id.as_bytes()],
         bump = pool.bump,
         constraint = pool.creator == creator.key() @ RedCircleError::Unauthorized
     )]
@@ -70,7 +70,7 @@ pub struct ClaimCuratorFees<'info> {
     /// The pool to claim from
     #[account(
         mut,
-        seeds = [POOL_SEED, pool.reddit_post_id.as_bytes()],
+        seeds = [POOL_SEED, pool.post_id.as_bytes()],
         bump = pool.bump,
         constraint = pool.curator == curator.key() @ RedCircleError::Unauthorized
     )]
@@ -172,7 +172,7 @@ pub fn claim_inviter_fees_handler(ctx: Context<ClaimInviterFees>) -> Result<()> 
 }
 
 /// Set/verify the creator for a pool
-/// This allows Reddit post authors to claim their creator fees
+/// This allows post authors to claim their creator fees
 #[derive(Accounts)]
 pub struct SetCreator<'info> {
     /// Admin or authorized verifier
@@ -182,7 +182,7 @@ pub struct SetCreator<'info> {
     /// The pool to update
     #[account(
         mut,
-        seeds = [POOL_SEED, pool.reddit_post_id.as_bytes()],
+        seeds = [POOL_SEED, pool.post_id.as_bytes()],
         bump = pool.bump
     )]
     pub pool: Account<'info, Pool>,
@@ -207,7 +207,7 @@ pub fn set_creator_handler(ctx: Context<SetCreator>) -> Result<()> {
 
     msg!(
         "Creator set for pool {}: {}",
-        pool.reddit_post_id,
+        pool.post_id,
         pool.creator
     );
 

@@ -1,7 +1,7 @@
 [package]
 name = "redcircle-protocol"
 version = "0.1.0"
-description = "RedCircle Protocol - Tokenize and trade Reddit posts on Solana"
+description = "RedCircle Protocol - Tokenize and trade social media posts on Solana"
 edition = "2021"
 
 [lib]

@@ -1,8 +1,6 @@
 use anchor_lang::prelude::*;
 
-// ============================================================================
 // SEEDS
-// ============================================================================
 
 #[constant]
 pub const CONFIG_SEED: &[u8] = b"config";
@@ -22,9 +20,7 @@ pub const REFERRAL_SEED: &[u8] = b"referral";
 #[constant]
 pub const LP_MINT_SEED: &[u8] = b"lp_mint";
 
-// ============================================================================
 // FEE CONFIGURATION (basis points - 1 bp = 0.01%)
-// ============================================================================
 
 /// Total trading fee: 3% (300 basis points)
 #[constant]
@@ -50,9 +46,7 @@ pub const CURATOR_FEE_BPS: u64 = 50;
 #[constant]
 pub const BPS_DENOMINATOR: u64 = 10000;
 
-// ============================================================================
 // BONDING CURVE DEFAULTS
-// ============================================================================
 
 /// Default initial virtual SOL reserve (in lamports)
 /// 30 SOL = 30_000_000_000 lamports
@@ -78,9 +72,7 @@ pub const DEFAULT_MIGRATION_THRESHOLD: u64 = 85_000_000_000;
 #[constant]
 pub const TOKEN_DECIMALS: u8 = 6;
 
-// ============================================================================
 // ANTI-BOT / LAUNCH PROTECTION
-// ============================================================================
 
 /// Launch protection duration in seconds (e.g., 30 seconds)
 #[constant]
@@ -91,13 +83,11 @@ pub const LAUNCH_PROTECTION_DURATION: i64 = 30;
 #[constant]
 pub const MAX_BUY_DURING_PROTECTION: u64 = 1_000_000_000;
 
-// ============================================================================
 // LIMITS
-// ============================================================================
 
-/// Maximum Reddit post ID length
+/// Maximum post ID length
 #[constant]
-pub const MAX_REDDIT_POST_ID_LEN: usize = 16;
+pub const MAX_POST_ID_LEN: usize = 32;
 
 /// Maximum metadata URI length
 #[constant]

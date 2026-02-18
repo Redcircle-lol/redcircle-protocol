@@ -2,9 +2,7 @@ use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum RedCircleError {
-    // ========================================================================
     // AUTHORIZATION ERRORS (6000-6009)
-    // ========================================================================
     #[msg("Unauthorized: caller is not the admin")]
     Unauthorized,
 
@@ -14,10 +12,8 @@ pub enum RedCircleError {
     #[msg("Invalid authority for this operation")]
     InvalidAuthority,
 
-    // ========================================================================
     // POOL ERRORS (6010-6029)
-    // ========================================================================
-    #[msg("Pool already exists for this Reddit post")]
+    #[msg("Pool already exists for this post")]
     PoolAlreadyExists,
 
     #[msg("Pool is not active")]
@@ -38,15 +34,13 @@ pub enum RedCircleError {
     #[msg("Invalid pool status for this operation")]
     InvalidPoolStatus,
 
-    #[msg("Reddit post ID is too long")]
-    RedditPostIdTooLong,
+    #[msg("Post ID is too long")]
+    PostIdTooLong,
 
-    #[msg("Reddit post ID cannot be empty")]
-    RedditPostIdEmpty,
+    #[msg("Post ID cannot be empty")]
+    PostIdEmpty,
 
-    // ========================================================================
     // TRADING ERRORS (6030-6049)
-    // ========================================================================
     #[msg("Trade amount is below minimum")]
     TradeBelowMinimum,
 
@@ -74,9 +68,7 @@ pub enum RedCircleError {
     #[msg("Buy amount exceeds launch protection limit")]
     ExceedsLaunchProtectionLimit,
 
-    // ========================================================================
     // MATH ERRORS (6050-6059)
-    // ========================================================================
     #[msg("Math overflow occurred")]
     MathOverflow,
 
@@ -89,9 +81,7 @@ pub enum RedCircleError {
     #[msg("Invalid calculation result")]
     InvalidCalculation,
 
-    // ========================================================================
     // FEE ERRORS (6060-6069)
-    // ========================================================================
     #[msg("No fees to claim")]
     NoFeesToClaim,
 
@@ -101,9 +91,7 @@ pub enum RedCircleError {
     #[msg("Fee calculation error")]
     FeeCalculationError,
 
-    // ========================================================================
     // REFERRAL ERRORS (6070-6079)
-    // ========================================================================
     #[msg("Referral already registered")]
     ReferralAlreadyRegistered,
 
@@ -116,9 +104,7 @@ pub enum RedCircleError {
     #[msg("Invalid referral")]
     InvalidReferral,
 
-    // ========================================================================
     // TOKEN ERRORS (6080-6089)
-    // ========================================================================
     #[msg("Token name too long")]
     TokenNameTooLong,
 
@@ -134,9 +120,7 @@ pub enum RedCircleError {
     #[msg("Invalid token account")]
     InvalidTokenAccount,
 
-    // ========================================================================
     // CONFIGURATION ERRORS (6090-6099)
-    // ========================================================================
     #[msg("Invalid configuration value")]
     InvalidConfig,
 

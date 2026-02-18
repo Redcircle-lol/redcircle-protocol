@@ -27,7 +27,7 @@ pub struct Swap<'info> {
     /// The pool being traded
     #[account(
         mut,
-        seeds = [POOL_SEED, pool.reddit_post_id.as_bytes()],
+        seeds = [POOL_SEED, pool.post_id.as_bytes()],
         bump = pool.bump,
         constraint = pool.is_tradeable() @ RedCircleError::PoolNotTradeable
     )]
@@ -231,9 +231,9 @@ fn execute_buy(ctx: &Context<Swap>, params: SwapParams) -> Result<()> {
     )?;
 
     // Transfer tokens from pool to user
-    let reddit_post_id = ctx.accounts.pool.reddit_post_id.clone();
+    let post_id = ctx.accounts.pool.post_id.clone();
     let pool_bump = ctx.accounts.pool.bump;
-    let seeds = &[POOL_SEED, reddit_post_id.as_bytes(), &[pool_bump]];
+    let seeds = &[POOL_SEED, post_id.as_bytes(), &[pool_bump]];
     let signer_seeds = &[&seeds[..]];
 
     transfer(

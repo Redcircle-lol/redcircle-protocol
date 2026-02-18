@@ -6,11 +6,11 @@ use crate::constants::*;
 use crate::error::RedCircleError;
 use crate::state::{Config, CurveType, Pool, PoolStatus};
 
-/// Create a new pool for a Reddit post (tokenize the post)
+/// Create a new pool for a post (tokenize the post)
 #[derive(Accounts)]
 #[instruction(params: CreatePoolParams)]
 pub struct CreatePool<'info> {
-    /// The curator who is tokenizing this Reddit post
+    /// The curator who is tokenizing this post
     #[account(mut)]
     pub curator: Signer<'info>,
 
@@ -23,12 +23,12 @@ pub struct CreatePool<'info> {
     )]
     pub config: Account<'info, Config>,
 
-    /// The pool account for this Reddit post
+    /// The pool account for this post
     #[account(
         init,
         payer = curator,
         space = Pool::SIZE,
-        seeds = [POOL_SEED, params.reddit_post_id.as_bytes()],
+        seeds = [POOL_SEED, params.post_id.as_bytes()],
         bump
     )]
     pub pool: Account<'info, Pool>,
@@ -77,33 +77,25 @@ pub struct CreatePool<'info> {
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct CreatePoolParams {
-    /// The Reddit post ID (unique identifier)
-    pub reddit_post_id: String,
-    /// Token name (e.g., "Reddit Post: abc123")
+    pub post_id: String,
     pub name: String,
-    /// Token symbol (e.g., "RPT")
     pub symbol: String,
-    /// Metadata URI for the token
     pub uri: String,
-    /// Curve type (optional, defaults to ConstantProduct)
     pub curve_type: Option<u8>,
-    /// Custom initial virtual SOL (optional, uses config default)
     pub initial_virtual_sol: Option<u64>,
-    /// Custom initial virtual token (optional, uses config default)
     pub initial_virtual_token: Option<u64>,
-    /// Custom migration threshold (optional, uses config default)
     pub migration_threshold: Option<u64>,
 }
 
 pub fn handler(ctx: Context<CreatePool>, params: CreatePoolParams) -> Result<()> {
     // Validate inputs
     require!(
-        !params.reddit_post_id.is_empty(),
-        RedCircleError::RedditPostIdEmpty
+        !params.post_id.is_empty(),
+        RedCircleError::PostIdEmpty
     );
     require!(
-        params.reddit_post_id.len() <= MAX_REDDIT_POST_ID_LEN,
-        RedCircleError::RedditPostIdTooLong
+        params.post_id.len() <= MAX_POST_ID_LEN,
+        RedCircleError::PostIdTooLong
     );
     require!(
         params.name.len() <= MAX_NAME_LEN,
@@ -137,7 +129,7 @@ pub fn handler(ctx: Context<CreatePool>, params: CreatePoolParams) -> Result<()>
     }
 
     // Initialize pool state
-    pool.reddit_post_id = params.reddit_post_id.clone();
+    pool.post_id = params.post_id.clone();
     pool.token_mint = ctx.accounts.token_mint.key();
     pool.curator = ctx.accounts.curator.key();
     pool.creator = Pubkey::default(); // Will be set when creator claims
@@ -198,9 +190,9 @@ pub fn handler(ctx: Context<CreatePool>, params: CreatePoolParams) -> Result<()>
     pool.uri = params.uri;
 
     // Mint total supply to pool vault
-    let reddit_post_id = pool.reddit_post_id.clone();
+    let post_id = pool.post_id.clone();
     let pool_bump = pool.bump;
-    let seeds = &[POOL_SEED, reddit_post_id.as_bytes(), &[pool_bump]];
+    let seeds = &[POOL_SEED, post_id.as_bytes(), &[pool_bump]];
     let signer_seeds = &[&seeds[..]];
 
     mint_to(
@@ -223,7 +215,7 @@ pub fn handler(ctx: Context<CreatePool>, params: CreatePoolParams) -> Result<()>
         .checked_add(1)
         .ok_or(RedCircleError::MathOverflow)?;
 
-    msg!("Pool created for Reddit post: {}", pool.reddit_post_id);
+    msg!("Pool created for post: {}", pool.post_id);
     msg!("Token mint: {}", pool.token_mint);
     msg!("Curator: {}", pool.curator);
     msg!("Initial virtual SOL: {}", pool.virtual_sol_reserve);

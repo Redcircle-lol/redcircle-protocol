@@ -29,15 +29,15 @@ pub mod redcircle_protocol {
         instructions::initialize::update_config_handler(ctx, params)
     }
 
-    /// Set/verify the creator for a pool (Reddit post author)
+    /// Set/verify the creator for a pool (post author)
     pub fn set_creator(ctx: Context<SetCreator>) -> Result<()> {
         instructions::claim_fees::set_creator_handler(ctx)
     }
 
     // POOL INSTRUCTIONS
 
-    /// Create a new pool for a Reddit post (tokenize the post)
-    /// Anyone can call this to tokenize a Reddit post and become a curator
+    /// Create a new pool for a post (tokenize the post)
+    /// Anyone can call this to tokenize a post and become a curator
     pub fn create_pool(ctx: Context<CreatePool>, params: CreatePoolParams) -> Result<()> {
         instructions::create_pool::handler(ctx, params)
     }
@@ -61,13 +61,13 @@ pub mod redcircle_protocol {
     // FEE INSTRUCTIONS
 
     /// Claim accumulated creator fees from a pool
-    /// Only callable by verified creator of the Reddit post
+    /// Only callable by verified creator of the post
     pub fn claim_creator_fees(ctx: Context<ClaimCreatorFees>) -> Result<()> {
         instructions::claim_fees::claim_creator_fees_handler(ctx)
     }
 
     /// Claim accumulated curator fees from a pool
-    /// Only callable by the curator who tokenized the Reddit post
+    /// Only callable by the curator who tokenized the post
     pub fn claim_curator_fees(ctx: Context<ClaimCuratorFees>) -> Result<()> {
         instructions::claim_fees::claim_curator_fees_handler(ctx)
     }

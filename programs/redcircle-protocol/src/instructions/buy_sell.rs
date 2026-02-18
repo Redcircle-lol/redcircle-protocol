@@ -24,7 +24,7 @@ pub struct Buy<'info> {
 
     #[account(
         mut,
-        seeds = [POOL_SEED, pool.reddit_post_id.as_bytes()],
+        seeds = [POOL_SEED, pool.post_id.as_bytes()],
         bump = pool.bump,
         constraint = pool.is_tradeable() @ RedCircleError::PoolNotTradeable
     )]
@@ -195,9 +195,9 @@ pub fn buy_handler(ctx: Context<Buy>, params: BuyParams) -> Result<()> {
     )?;
 
     // Transfer tokens to user
-    let reddit_post_id = pool.reddit_post_id.clone();
+    let post_id = pool.post_id.clone();
     let pool_bump = pool.bump;
-    let seeds = &[POOL_SEED, reddit_post_id.as_bytes(), &[pool_bump]];
+    let seeds = &[POOL_SEED, post_id.as_bytes(), &[pool_bump]];
     let signer_seeds = &[&seeds[..]];
 
     transfer(
@@ -280,7 +280,7 @@ pub struct Sell<'info> {
 
     #[account(
         mut,
-        seeds = [POOL_SEED, pool.reddit_post_id.as_bytes()],
+        seeds = [POOL_SEED, pool.post_id.as_bytes()],
         bump = pool.bump,
         constraint = pool.is_tradeable() @ RedCircleError::PoolNotTradeable
     )]
