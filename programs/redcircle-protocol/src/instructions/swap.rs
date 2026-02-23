@@ -95,7 +95,7 @@ pub struct SwapParams {
     pub is_buy: bool,
 }
 
-pub fn handler(ctx: Context<Swap>, params: SwapParams) -> Result<()> {
+pub fn swap_handler(mut ctx: Context<Swap>, params: SwapParams) -> Result<()> {
     require!(params.amount_in > 0, RedCircleError::ZeroAmount);
     require!(
         params.amount_in >= MIN_TRADE_AMOUNT,
@@ -121,16 +121,13 @@ pub fn handler(ctx: Context<Swap>, params: SwapParams) -> Result<()> {
     }
 
     if params.is_buy {
-        execute_buy(&ctx, params)
+        execute_buy(&mut ctx, params)
     } else {
-        execute_sell(&ctx, params)
+        execute_sell(&mut ctx, params)
     }
 }
 
-fn execute_buy(ctx: &Context<Swap>, params: SwapParams) -> Result<()> {
-    let pool = &ctx.accounts.pool;
-    let config = &ctx.accounts.config;
-
+fn execute_buy(ctx: &mut Context<Swap>, params: SwapParams) -> Result<()> {
     // Calculate fee (3% of SOL input)
     let total_fee = params
         .amount_in
@@ -146,10 +143,10 @@ fn execute_buy(ctx: &Context<Swap>, params: SwapParams) -> Result<()> {
 
     // Calculate tokens out using bonding curve
     let tokens_out = calculate_tokens_out(
-        pool.virtual_sol_reserve,
-        pool.virtual_token_reserve,
+        ctx.accounts.pool.virtual_sol_reserve,
+        ctx.accounts.pool.virtual_token_reserve,
         sol_after_fee,
-        pool.curve_type,
+        ctx.accounts.pool.curve_type,
     )?;
 
     // Check slippage
@@ -160,7 +157,7 @@ fn execute_buy(ctx: &Context<Swap>, params: SwapParams) -> Result<()> {
 
     // Check pool has enough tokens
     require!(
-        tokens_out <= pool.real_token_reserve,
+        tokens_out <= ctx.accounts.pool.real_token_reserve,
         RedCircleError::InsufficientPoolTokens
     );
 
@@ -250,47 +247,49 @@ fn execute_buy(ctx: &Context<Swap>, params: SwapParams) -> Result<()> {
     )?;
 
     // Update pool state
-    ctx.accounts.pool.virtual_sol_reserve = pool
+    let pool = &mut ctx.accounts.pool;
+    pool.virtual_sol_reserve = pool
         .virtual_sol_reserve
         .checked_add(sol_after_fee)
         .ok_or(RedCircleError::MathOverflow)?;
-    ctx.accounts.pool.virtual_token_reserve = pool
+    pool.virtual_token_reserve = pool
         .virtual_token_reserve
         .checked_sub(tokens_out)
         .ok_or(RedCircleError::MathUnderflow)?;
-    ctx.accounts.pool.real_sol_reserve = pool
+    pool.real_sol_reserve = pool
         .real_sol_reserve
         .checked_add(sol_after_fee)
         .ok_or(RedCircleError::MathOverflow)?
         .checked_add(creator_fee)
         .ok_or(RedCircleError::MathOverflow)?;
-    ctx.accounts.pool.real_token_reserve = pool
+    pool.real_token_reserve = pool
         .real_token_reserve
         .checked_sub(tokens_out)
         .ok_or(RedCircleError::MathUnderflow)?;
-    ctx.accounts.pool.tokens_sold = pool
+    pool.tokens_sold = pool
         .tokens_sold
         .checked_add(tokens_out)
         .ok_or(RedCircleError::MathOverflow)?;
-    ctx.accounts.pool.total_volume = pool
+    pool.total_volume = pool
         .total_volume
         .checked_add(params.amount_in as u128)
         .ok_or(RedCircleError::MathOverflow)?;
-    ctx.accounts.pool.total_fees = pool
+    pool.total_fees = pool
         .total_fees
         .checked_add(total_fee)
         .ok_or(RedCircleError::MathOverflow)?;
-    ctx.accounts.pool.unclaimed_creator_fees = pool
+    pool.unclaimed_creator_fees = pool
         .unclaimed_creator_fees
         .checked_add(creator_fee)
         .ok_or(RedCircleError::MathOverflow)?;
 
     // Update global config
-    ctx.accounts.config.total_volume = config
+    let config = &mut ctx.accounts.config;
+    config.total_volume = config
         .total_volume
         .checked_add(params.amount_in as u128)
         .ok_or(RedCircleError::MathOverflow)?;
-    ctx.accounts.config.total_fees_collected = config
+    config.total_fees_collected = config
         .total_fees_collected
         .checked_add(total_fee as u128)
         .ok_or(RedCircleError::MathOverflow)?;
@@ -304,16 +303,13 @@ fn execute_buy(ctx: &Context<Swap>, params: SwapParams) -> Result<()> {
     Ok(())
 }
 
-fn execute_sell(ctx: &Context<Swap>, params: SwapParams) -> Result<()> {
-    let pool = &ctx.accounts.pool;
-    let config = &ctx.accounts.config;
-
+fn execute_sell(ctx: &mut Context<Swap>, params: SwapParams) -> Result<()> {
     // Calculate SOL out using bonding curve
     let sol_out_before_fee = calculate_sol_out(
-        pool.virtual_sol_reserve,
-        pool.virtual_token_reserve,
+        ctx.accounts.pool.virtual_sol_reserve,
+        ctx.accounts.pool.virtual_token_reserve,
         params.amount_in,
-        pool.curve_type,
+        ctx.accounts.pool.curve_type,
     )?;
 
     // Calculate fee (3% of SOL output)
@@ -335,7 +331,7 @@ fn execute_sell(ctx: &Context<Swap>, params: SwapParams) -> Result<()> {
 
     // Check pool has enough SOL
     require!(
-        sol_out_before_fee <= pool.real_sol_reserve,
+        sol_out_before_fee <= ctx.accounts.pool.real_sol_reserve,
         RedCircleError::InsufficientPoolSol
     );
 
@@ -423,47 +419,49 @@ fn execute_sell(ctx: &Context<Swap>, params: SwapParams) -> Result<()> {
         .ok_or(RedCircleError::MathOverflow)?;
 
     // Update pool state
-    ctx.accounts.pool.virtual_sol_reserve = pool
+    let pool = &mut ctx.accounts.pool;
+    pool.virtual_sol_reserve = pool
         .virtual_sol_reserve
         .checked_sub(sol_out_before_fee)
         .ok_or(RedCircleError::MathUnderflow)?;
-    ctx.accounts.pool.virtual_token_reserve = pool
+    pool.virtual_token_reserve = pool
         .virtual_token_reserve
         .checked_add(params.amount_in)
         .ok_or(RedCircleError::MathOverflow)?;
-    ctx.accounts.pool.real_sol_reserve = pool
+    pool.real_sol_reserve = pool
         .real_sol_reserve
         .checked_sub(sol_out_before_fee)
         .ok_or(RedCircleError::MathUnderflow)?
         .checked_add(creator_fee)
         .ok_or(RedCircleError::MathOverflow)?;
-    ctx.accounts.pool.real_token_reserve = pool
+    pool.real_token_reserve = pool
         .real_token_reserve
         .checked_add(params.amount_in)
         .ok_or(RedCircleError::MathOverflow)?;
-    ctx.accounts.pool.tokens_sold = pool
+    pool.tokens_sold = pool
         .tokens_sold
         .checked_sub(params.amount_in)
         .ok_or(RedCircleError::MathUnderflow)?;
-    ctx.accounts.pool.total_volume = pool
+    pool.total_volume = pool
         .total_volume
         .checked_add(sol_out_before_fee as u128)
         .ok_or(RedCircleError::MathOverflow)?;
-    ctx.accounts.pool.total_fees = pool
+    pool.total_fees = pool
         .total_fees
         .checked_add(total_fee)
         .ok_or(RedCircleError::MathOverflow)?;
-    ctx.accounts.pool.unclaimed_creator_fees = pool
+    pool.unclaimed_creator_fees = pool
         .unclaimed_creator_fees
         .checked_add(creator_fee)
         .ok_or(RedCircleError::MathOverflow)?;
 
     // Update global config
-    ctx.accounts.config.total_volume = config
+    let config = &mut ctx.accounts.config;
+    config.total_volume = config
         .total_volume
         .checked_add(sol_out_before_fee as u128)
         .ok_or(RedCircleError::MathOverflow)?;
-    ctx.accounts.config.total_fees_collected = config
+    config.total_fees_collected = config
         .total_fees_collected
         .checked_add(total_fee as u128)
         .ok_or(RedCircleError::MathOverflow)?;

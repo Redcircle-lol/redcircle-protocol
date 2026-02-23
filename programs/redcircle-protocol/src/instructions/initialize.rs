@@ -1,8 +1,7 @@
-use anchor_lang::prelude::*;
-
 use crate::constants::*;
 use crate::error::RedCircleError;
 use crate::state::Config;
+use anchor_lang::prelude::*;
 
 /// Initialize the protocol configuration
 /// This should only be called once by the protocol admin
@@ -37,7 +36,7 @@ pub struct InitializeParams {
     pub max_buy_during_protection: Option<u64>,
 }
 
-pub fn handler(ctx: Context<Initialize>, params: InitializeParams) -> Result<()> {
+pub fn initialize_handler(ctx: Context<Initialize>, params: InitializeParams) -> Result<()> {
     let config = &mut ctx.accounts.config;
 
     config.admin = ctx.accounts.admin.key();

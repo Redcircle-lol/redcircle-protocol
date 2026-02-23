@@ -206,7 +206,7 @@ pub fn buy_handler(ctx: Context<Buy>, params: BuyParams) -> Result<()> {
             Transfer {
                 from: ctx.accounts.pool_token_vault.to_account_info(),
                 to: ctx.accounts.user_token_account.to_account_info(),
-                authority: ctx.accounts.pool.to_account_info(),
+                authority: pool.to_account_info(),
             },
             signer_seeds,
         ),

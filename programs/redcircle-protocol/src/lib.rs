@@ -21,7 +21,7 @@ pub mod redcircle_protocol {
 
     /// Initialize the protocol with global configuration
     pub fn initialize(ctx: Context<Initialize>, params: InitializeParams) -> Result<()> {
-        instructions::initialize::handler(ctx, params)
+        instructions::initialize::initialize_handler(ctx, params)
     }
 
     /// Update protocol configuration
@@ -39,13 +39,13 @@ pub mod redcircle_protocol {
     /// Create a new pool for a post (tokenize the post)
     /// Anyone can call this to tokenize a post and become a curator
     pub fn create_pool(ctx: Context<CreatePool>, params: CreatePoolParams) -> Result<()> {
-        instructions::create_pool::handler(ctx, params)
+        instructions::create_pool::create_pool_handler(ctx, params)
     }
 
     // TRADING INSTRUCTIONS
 
     pub fn swap(ctx: Context<Swap>, params: SwapParams) -> Result<()> {
-        instructions::swap::handler(ctx, params)
+        instructions::swap::swap_handler(ctx, params)
     }
 
     /// Simplified buy instruction (SOL -> Token)

@@ -87,7 +87,7 @@ pub struct CreatePoolParams {
     pub migration_threshold: Option<u64>,
 }
 
-pub fn handler(ctx: Context<CreatePool>, params: CreatePoolParams) -> Result<()> {
+pub fn create_pool_handler(ctx: Context<CreatePool>, params: CreatePoolParams) -> Result<()> {
     // Validate inputs
     require!(
         !params.post_id.is_empty(),
@@ -201,7 +201,7 @@ pub fn handler(ctx: Context<CreatePool>, params: CreatePoolParams) -> Result<()>
             MintTo {
                 mint: ctx.accounts.token_mint.to_account_info(),
                 to: ctx.accounts.pool_token_vault.to_account_info(),
-                authority: ctx.accounts.pool.to_account_info(),
+                authority: pool.to_account_info(),
             },
             signer_seeds,
         ),
