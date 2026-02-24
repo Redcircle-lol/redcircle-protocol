@@ -1,0 +1,31 @@
+{
+  "name": "@redcircle/protocol-sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for the RedCircle Protocol on Solana",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
+    "@solana/web3.js": "^1.95.0",
+    "@solana/spl-token": "^0.4.0",
+    "bn.js": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.0",
+    "typescript": "^5.7.3"
+  },
+  "peerDependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
+    "@solana/web3.js": "^1.95.0"
+  },
+  "license": "MIT"
+}
