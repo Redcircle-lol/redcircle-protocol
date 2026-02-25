@@ -55,8 +55,8 @@ pub const TOKEN_DECIMALS: u8 = 6;
 
 // ANTI-BOT / LAUNCH PROTECTION
 
-/// Launch protection duration in seconds (e.g., 30 seconds)
-pub const LAUNCH_PROTECTION_DURATION: i64 = 30;
+/// Launch protection duration in seconds (e.g., 30 minutes)
+pub const LAUNCH_PROTECTION_DURATION: i64 = 1800;
 
 /// Maximum buy during launch protection (in lamports)
 /// 1 SOL = 1_000_000_000 lamports

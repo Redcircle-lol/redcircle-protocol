@@ -49,10 +49,7 @@ export class RedCircleClient {
   readonly connection: Connection;
   readonly programId: PublicKey;
 
-  constructor(
-    provider: anchor.AnchorProvider,
-    opts?: RedCircleClientOpts
-  ) {
+  constructor(provider: anchor.AnchorProvider, opts?: RedCircleClientOpts) {
     this.programId = opts?.programId ?? PROGRAM_ID;
     this.connection = provider.connection;
     this.program = new anchor.Program(idl as unknown as anchor.Idl, provider);
@@ -355,9 +352,7 @@ export class RedCircleClient {
       .instruction();
   }
 
-  async claimInviterFees(
-    inviter: PublicKey
-  ): Promise<TransactionInstruction> {
+  async claimInviterFees(inviter: PublicKey): Promise<TransactionInstruction> {
     const inviterStats = this.getInviterStatsPda(inviter);
     const feeVault = this.getFeeVaultPda();
     return await this.program.methods

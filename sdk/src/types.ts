@@ -1,8 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 
-// --- Enums ---
-
 export enum PoolStatus {
   Active = "active",
   LaunchProtection = "launchProtection",
@@ -16,7 +14,7 @@ export enum CurveType {
   Exponential = 2,
 }
 
-// --- On-chain account types ---
+// --- Account types ---
 
 export interface Config {
   admin: PublicKey;
@@ -39,7 +37,11 @@ export interface Pool {
   tokenMint: PublicKey;
   curator: PublicKey;
   creator: PublicKey;
-  status: { active: {} } | { launchProtection: {} } | { migrated: {} } | { paused: {} };
+  status:
+    | { active: {} }
+    | { launchProtection: {} }
+    | { migrated: {} }
+    | { paused: {} };
   curveType: { constantProduct: {} } | { linear: {} } | { exponential: {} };
   virtualSolReserve: BN;
   virtualTokenReserve: BN;

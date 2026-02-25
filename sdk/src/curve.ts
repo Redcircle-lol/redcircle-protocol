@@ -36,9 +36,15 @@ function linearBuy(
   virtualTokenReserve: BN,
   solIn: BN
 ): BN {
-  const currentPrice = virtualSolReserve.mul(PRECISION).div(virtualTokenReserve);
+  const currentPrice = virtualSolReserve
+    .mul(PRECISION)
+    .div(virtualTokenReserve);
   const baseTokens = solIn.mul(PRECISION).div(currentPrice);
-  const cpTokens = constantProductBuy(virtualSolReserve, virtualTokenReserve, solIn);
+  const cpTokens = constantProductBuy(
+    virtualSolReserve,
+    virtualTokenReserve,
+    solIn
+  );
   return baseTokens.add(cpTokens).div(new BN(2));
 }
 
@@ -47,9 +53,15 @@ function linearSell(
   virtualTokenReserve: BN,
   tokensIn: BN
 ): BN {
-  const currentPrice = virtualSolReserve.mul(PRECISION).div(virtualTokenReserve);
+  const currentPrice = virtualSolReserve
+    .mul(PRECISION)
+    .div(virtualTokenReserve);
   const baseSol = tokensIn.mul(currentPrice).div(PRECISION);
-  const cpSol = constantProductSell(virtualSolReserve, virtualTokenReserve, tokensIn);
+  const cpSol = constantProductSell(
+    virtualSolReserve,
+    virtualTokenReserve,
+    tokensIn
+  );
   return baseSol.add(cpSol).div(new BN(2));
 }
 
@@ -60,12 +72,14 @@ function exponentialBuy(
   virtualTokenReserve: BN,
   solIn: BN
 ): BN {
-  const cpTokens = constantProductBuy(virtualSolReserve, virtualTokenReserve, solIn);
+  const cpTokens = constantProductBuy(
+    virtualSolReserve,
+    virtualTokenReserve,
+    solIn
+  );
   const sizeFactor = solIn.muln(100).div(virtualSolReserve);
   const reductionBps = BN.min(sizeFactor, new BN(50));
-  return cpTokens
-    .mul(new BN(10000).sub(reductionBps))
-    .div(new BN(10000));
+  return cpTokens.mul(new BN(10000).sub(reductionBps)).div(new BN(10000));
 }
 
 function exponentialSell(
@@ -73,12 +87,14 @@ function exponentialSell(
   virtualTokenReserve: BN,
   tokensIn: BN
 ): BN {
-  const cpSol = constantProductSell(virtualSolReserve, virtualTokenReserve, tokensIn);
+  const cpSol = constantProductSell(
+    virtualSolReserve,
+    virtualTokenReserve,
+    tokensIn
+  );
   const sizeFactor = tokensIn.muln(100).div(virtualTokenReserve);
   const reductionBps = BN.min(sizeFactor, new BN(50));
-  return cpSol
-    .mul(new BN(10000).sub(reductionBps))
-    .div(new BN(10000));
+  return cpSol.mul(new BN(10000).sub(reductionBps)).div(new BN(10000));
 }
 
 // --- Public API ---
@@ -109,7 +125,11 @@ export function calculateSolOut(
 ): BN {
   switch (curveType) {
     case CurveType.ConstantProduct:
-      return constantProductSell(virtualSolReserve, virtualTokenReserve, tokensIn);
+      return constantProductSell(
+        virtualSolReserve,
+        virtualTokenReserve,
+        tokensIn
+      );
     case CurveType.Linear:
       return linearSell(virtualSolReserve, virtualTokenReserve, tokensIn);
     case CurveType.Exponential:
@@ -152,7 +172,12 @@ export function estimateBuyTokensOut(
 ): BN {
   const fee = calculateFee(solAmount);
   const solAfterFee = solAmount.sub(fee);
-  return calculateTokensOut(virtualSolReserve, virtualTokenReserve, solAfterFee, curveType);
+  return calculateTokensOut(
+    virtualSolReserve,
+    virtualTokenReserve,
+    solAfterFee,
+    curveType
+  );
 }
 
 /**
@@ -165,7 +190,12 @@ export function estimateSellSolOut(
   tokenAmount: BN,
   curveType: CurveType = CurveType.ConstantProduct
 ): BN {
-  const grossSol = calculateSolOut(virtualSolReserve, virtualTokenReserve, tokenAmount, curveType);
+  const grossSol = calculateSolOut(
+    virtualSolReserve,
+    virtualTokenReserve,
+    tokenAmount,
+    curveType
+  );
   const fee = calculateFee(grossSol);
   return grossSol.sub(fee);
 }
@@ -177,8 +207,16 @@ export function calculatePriceImpactBps(
   solIn: BN,
   curveType: CurveType = CurveType.ConstantProduct
 ): number {
-  const priceBefore = calculateCurrentPrice(virtualSolReserve, virtualTokenReserve);
-  const tokensOut = calculateTokensOut(virtualSolReserve, virtualTokenReserve, solIn, curveType);
+  const priceBefore = calculateCurrentPrice(
+    virtualSolReserve,
+    virtualTokenReserve
+  );
+  const tokensOut = calculateTokensOut(
+    virtualSolReserve,
+    virtualTokenReserve,
+    solIn,
+    curveType
+  );
   const newSolReserve = virtualSolReserve.add(solIn);
   const newTokenReserve = virtualTokenReserve.sub(tokensOut);
   const priceAfter = calculateCurrentPrice(newSolReserve, newTokenReserve);

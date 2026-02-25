@@ -12,7 +12,9 @@ import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "./constants";
 
-export function findConfigPda(programId: PublicKey = PROGRAM_ID): [PublicKey, number] {
+export function findConfigPda(
+  programId: PublicKey = PROGRAM_ID
+): [PublicKey, number] {
   return PublicKey.findProgramAddressSync([CONFIG_SEED], programId);
 }
 
@@ -46,7 +48,9 @@ export function findPoolSolVaultPda(
   );
 }
 
-export function findFeeVaultPda(programId: PublicKey = PROGRAM_ID): [PublicKey, number] {
+export function findFeeVaultPda(
+  programId: PublicKey = PROGRAM_ID
+): [PublicKey, number] {
   return PublicKey.findProgramAddressSync([FEE_VAULT_SEED], programId);
 }
 

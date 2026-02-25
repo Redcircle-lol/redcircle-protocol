@@ -18,7 +18,9 @@ const IDL = {
         {
           name: "config",
           writable: true,
-          pda: { seeds: [{ kind: "const", value: [99, 111, 110, 102, 105, 103] }] },
+          pda: {
+            seeds: [{ kind: "const", value: [99, 111, 110, 102, 105, 103] }],
+          },
         },
         {
           name: "pool",
@@ -39,13 +41,21 @@ const IDL = {
               { kind: "account", path: "pool" },
               {
                 kind: "const",
-                value: [6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140, 245, 133, 126, 255, 0, 169],
+                value: [
+                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
+                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
+                  245, 133, 126, 255, 0, 169,
+                ],
               },
               { kind: "account", path: "token_mint" },
             ],
             program: {
               kind: "const",
-              value: [140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142, 13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216, 219, 233, 248, 89],
+              value: [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89,
+              ],
             },
           },
         },
@@ -54,7 +64,10 @@ const IDL = {
           writable: true,
           pda: {
             seeds: [
-              { kind: "const", value: [115, 111, 108, 95, 118, 97, 117, 108, 116] },
+              {
+                kind: "const",
+                value: [115, 111, 108, 95, 118, 97, 117, 108, 116],
+              },
               { kind: "account", path: "pool" },
             ],
           },
@@ -67,30 +80,52 @@ const IDL = {
               { kind: "account", path: "user" },
               {
                 kind: "const",
-                value: [6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140, 245, 133, 126, 255, 0, 169],
+                value: [
+                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
+                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
+                  245, 133, 126, 255, 0, 169,
+                ],
               },
               { kind: "account", path: "token_mint" },
             ],
             program: {
               kind: "const",
-              value: [140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142, 13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216, 219, 233, 248, 89],
+              value: [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89,
+              ],
             },
           },
         },
         { name: "treasury", writable: true },
         { name: "curator", writable: true },
-        { name: "token_program", address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
-        { name: "associated_token_program", address: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL" },
+        {
+          name: "token_program",
+          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        },
+        {
+          name: "associated_token_program",
+          address: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+        },
         { name: "system_program", address: "11111111111111111111111111111111" },
       ],
       args: [{ name: "params", type: { defined: { name: "BuyParams" } } }],
     },
     {
       name: "claim_creator_fees",
-      docs: ["Claim accumulated creator fees from a pool", "Only callable by verified creator of the post"],
+      docs: [
+        "Claim accumulated creator fees from a pool",
+        "Only callable by verified creator of the post",
+      ],
       discriminator: [0, 23, 125, 234, 156, 118, 134, 89],
       accounts: [
-        { name: "creator", docs: ["The creator claiming fees (must be verified)"], writable: true, signer: true },
+        {
+          name: "creator",
+          docs: ["The creator claiming fees (must be verified)"],
+          writable: true,
+          signer: true,
+        },
         {
           name: "pool",
           docs: ["The pool to claim from"],
@@ -108,7 +143,10 @@ const IDL = {
           writable: true,
           pda: {
             seeds: [
-              { kind: "const", value: [115, 111, 108, 95, 118, 97, 117, 108, 116] },
+              {
+                kind: "const",
+                value: [115, 111, 108, 95, 118, 97, 117, 108, 116],
+              },
               { kind: "account", path: "pool" },
             ],
           },
@@ -119,10 +157,18 @@ const IDL = {
     },
     {
       name: "claim_curator_fees",
-      docs: ["Claim accumulated curator fees from a pool", "Only callable by the curator who tokenized the post"],
+      docs: [
+        "Claim accumulated curator fees from a pool",
+        "Only callable by the curator who tokenized the post",
+      ],
       discriminator: [106, 117, 99, 225, 132, 67, 27, 207],
       accounts: [
-        { name: "curator", docs: ["The curator claiming fees"], writable: true, signer: true },
+        {
+          name: "curator",
+          docs: ["The curator claiming fees"],
+          writable: true,
+          signer: true,
+        },
         {
           name: "pool",
           docs: ["The pool to claim from"],
@@ -140,7 +186,10 @@ const IDL = {
           writable: true,
           pda: {
             seeds: [
-              { kind: "const", value: [115, 111, 108, 95, 118, 97, 117, 108, 116] },
+              {
+                kind: "const",
+                value: [115, 111, 108, 95, 118, 97, 117, 108, 116],
+              },
               { kind: "account", path: "pool" },
             ],
           },
@@ -151,17 +200,30 @@ const IDL = {
     },
     {
       name: "claim_inviter_fees",
-      docs: ["Claim accumulated inviter fees", "Only callable by the inviter who referred a user"],
+      docs: [
+        "Claim accumulated inviter fees",
+        "Only callable by the inviter who referred a user",
+      ],
       discriminator: [175, 209, 227, 196, 151, 232, 152, 169],
       accounts: [
-        { name: "inviter", docs: ["The inviter claiming fees"], writable: true, signer: true },
+        {
+          name: "inviter",
+          docs: ["The inviter claiming fees"],
+          writable: true,
+          signer: true,
+        },
         {
           name: "inviter_stats",
           docs: ["Inviter's stats account"],
           writable: true,
           pda: {
             seeds: [
-              { kind: "const", value: [105, 110, 118, 105, 116, 101, 114, 95, 115, 116, 97, 116, 115] },
+              {
+                kind: "const",
+                value: [
+                  105, 110, 118, 105, 116, 101, 114, 95, 115, 116, 97, 116, 115,
+                ],
+              },
               { kind: "account", path: "inviter" },
             ],
           },
@@ -171,7 +233,12 @@ const IDL = {
           docs: ["Fee vault that holds accumulated inviter fees"],
           writable: true,
           pda: {
-            seeds: [{ kind: "const", value: [102, 101, 101, 95, 118, 97, 117, 108, 116] }],
+            seeds: [
+              {
+                kind: "const",
+                value: [102, 101, 101, 95, 118, 97, 117, 108, 116],
+              },
+            ],
           },
         },
         { name: "system_program", address: "11111111111111111111111111111111" },
@@ -180,15 +247,25 @@ const IDL = {
     },
     {
       name: "create_pool",
-      docs: ["Create a new pool for a post (tokenize the post)", "Anyone can call this to tokenize a post and become a curator"],
+      docs: [
+        "Create a new pool for a post (tokenize the post)",
+        "Anyone can call this to tokenize a post and become a curator",
+      ],
       discriminator: [233, 146, 209, 142, 207, 104, 64, 188],
       accounts: [
-        { name: "curator", docs: ["The curator who is tokenizing this post"], writable: true, signer: true },
+        {
+          name: "curator",
+          docs: ["The curator who is tokenizing this post"],
+          writable: true,
+          signer: true,
+        },
         {
           name: "config",
           docs: ["Global protocol configuration"],
           writable: true,
-          pda: { seeds: [{ kind: "const", value: [99, 111, 110, 102, 105, 103] }] },
+          pda: {
+            seeds: [{ kind: "const", value: [99, 111, 110, 102, 105, 103] }],
+          },
         },
         {
           name: "pool",
@@ -221,13 +298,21 @@ const IDL = {
               { kind: "account", path: "pool" },
               {
                 kind: "const",
-                value: [6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140, 245, 133, 126, 255, 0, 169],
+                value: [
+                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
+                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
+                  245, 133, 126, 255, 0, 169,
+                ],
               },
               { kind: "account", path: "token_mint" },
             ],
             program: {
               kind: "const",
-              value: [140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142, 13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216, 219, 233, 248, 89],
+              value: [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89,
+              ],
             },
           },
         },
@@ -237,17 +322,32 @@ const IDL = {
           writable: true,
           pda: {
             seeds: [
-              { kind: "const", value: [115, 111, 108, 95, 118, 97, 117, 108, 116] },
+              {
+                kind: "const",
+                value: [115, 111, 108, 95, 118, 97, 117, 108, 116],
+              },
               { kind: "account", path: "pool" },
             ],
           },
         },
-        { name: "treasury", docs: ["Treasury to receive pool creation fee (if any)"], writable: true },
-        { name: "token_program", address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
-        { name: "associated_token_program", address: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL" },
+        {
+          name: "treasury",
+          docs: ["Treasury to receive pool creation fee (if any)"],
+          writable: true,
+        },
+        {
+          name: "token_program",
+          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        },
+        {
+          name: "associated_token_program",
+          address: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+        },
         { name: "system_program", address: "11111111111111111111111111111111" },
       ],
-      args: [{ name: "params", type: { defined: { name: "CreatePoolParams" } } }],
+      args: [
+        { name: "params", type: { defined: { name: "CreatePoolParams" } } },
+      ],
     },
     {
       name: "initialize",
@@ -255,23 +355,41 @@ const IDL = {
       discriminator: [175, 175, 109, 31, 13, 152, 155, 237],
       accounts: [
         { name: "admin", writable: true, signer: true },
-        { name: "treasury", docs: ["The treasury wallet that receives platform fees"] },
+        {
+          name: "treasury",
+          docs: ["The treasury wallet that receives platform fees"],
+        },
         {
           name: "config",
           writable: true,
-          pda: { seeds: [{ kind: "const", value: [99, 111, 110, 102, 105, 103] }] },
+          pda: {
+            seeds: [{ kind: "const", value: [99, 111, 110, 102, 105, 103] }],
+          },
         },
         { name: "system_program", address: "11111111111111111111111111111111" },
       ],
-      args: [{ name: "params", type: { defined: { name: "InitializeParams" } } }],
+      args: [
+        { name: "params", type: { defined: { name: "InitializeParams" } } },
+      ],
     },
     {
       name: "register_referral",
-      docs: ["Register a referral relationship", "A user registers with their inviter (referrer)"],
+      docs: [
+        "Register a referral relationship",
+        "A user registers with their inviter (referrer)",
+      ],
       discriminator: [158, 196, 134, 102, 193, 102, 184, 86],
       accounts: [
-        { name: "user", docs: ["The user registering the referral"], writable: true, signer: true },
-        { name: "inviter", docs: ["The inviter (referrer) who invited this user"] },
+        {
+          name: "user",
+          docs: ["The user registering the referral"],
+          writable: true,
+          signer: true,
+        },
+        {
+          name: "inviter",
+          docs: ["The inviter (referrer) who invited this user"],
+        },
         {
           name: "referral",
           docs: ["User's referral account (to be created)"],
@@ -289,7 +407,12 @@ const IDL = {
           writable: true,
           pda: {
             seeds: [
-              { kind: "const", value: [105, 110, 118, 105, 116, 101, 114, 95, 115, 116, 97, 116, 115] },
+              {
+                kind: "const",
+                value: [
+                  105, 110, 118, 105, 116, 101, 114, 95, 115, 116, 97, 116, 115,
+                ],
+              },
               { kind: "account", path: "inviter" },
             ],
           },
@@ -307,7 +430,9 @@ const IDL = {
         {
           name: "config",
           writable: true,
-          pda: { seeds: [{ kind: "const", value: [99, 111, 110, 102, 105, 103] }] },
+          pda: {
+            seeds: [{ kind: "const", value: [99, 111, 110, 102, 105, 103] }],
+          },
         },
         {
           name: "pool",
@@ -328,13 +453,21 @@ const IDL = {
               { kind: "account", path: "pool" },
               {
                 kind: "const",
-                value: [6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140, 245, 133, 126, 255, 0, 169],
+                value: [
+                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
+                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
+                  245, 133, 126, 255, 0, 169,
+                ],
               },
               { kind: "account", path: "token_mint" },
             ],
             program: {
               kind: "const",
-              value: [140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142, 13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216, 219, 233, 248, 89],
+              value: [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89,
+              ],
             },
           },
         },
@@ -343,7 +476,10 @@ const IDL = {
           writable: true,
           pda: {
             seeds: [
-              { kind: "const", value: [115, 111, 108, 95, 118, 97, 117, 108, 116] },
+              {
+                kind: "const",
+                value: [115, 111, 108, 95, 118, 97, 117, 108, 116],
+              },
               { kind: "account", path: "pool" },
             ],
           },
@@ -356,20 +492,34 @@ const IDL = {
               { kind: "account", path: "user" },
               {
                 kind: "const",
-                value: [6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140, 245, 133, 126, 255, 0, 169],
+                value: [
+                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
+                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
+                  245, 133, 126, 255, 0, 169,
+                ],
               },
               { kind: "account", path: "token_mint" },
             ],
             program: {
               kind: "const",
-              value: [140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142, 13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216, 219, 233, 248, 89],
+              value: [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89,
+              ],
             },
           },
         },
         { name: "treasury", writable: true },
         { name: "curator", writable: true },
-        { name: "token_program", address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
-        { name: "associated_token_program", address: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL" },
+        {
+          name: "token_program",
+          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        },
+        {
+          name: "associated_token_program",
+          address: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+        },
         { name: "system_program", address: "11111111111111111111111111111111" },
       ],
       args: [{ name: "params", type: { defined: { name: "SellParams" } } }],
@@ -379,7 +529,12 @@ const IDL = {
       docs: ["Set/verify the creator for a pool (post author)"],
       discriminator: [254, 148, 255, 112, 207, 142, 170, 165],
       accounts: [
-        { name: "authority", docs: ["Admin or authorized verifier"], writable: true, signer: true },
+        {
+          name: "authority",
+          docs: ["Admin or authorized verifier"],
+          writable: true,
+          signer: true,
+        },
         {
           name: "pool",
           docs: ["The pool to update"],
@@ -394,7 +549,9 @@ const IDL = {
         {
           name: "config",
           docs: ["Global config to verify authority"],
-          pda: { seeds: [{ kind: "const", value: [99, 111, 110, 102, 105, 103] }] },
+          pda: {
+            seeds: [{ kind: "const", value: [99, 111, 110, 102, 105, 103] }],
+          },
         },
         { name: "creator", docs: ["The creator wallet to set"] },
       ],
@@ -404,12 +561,19 @@ const IDL = {
       name: "swap",
       discriminator: [248, 198, 158, 145, 225, 117, 135, 200],
       accounts: [
-        { name: "user", docs: ["The user performing the swap"], writable: true, signer: true },
+        {
+          name: "user",
+          docs: ["The user performing the swap"],
+          writable: true,
+          signer: true,
+        },
         {
           name: "config",
           docs: ["Global protocol configuration"],
           writable: true,
-          pda: { seeds: [{ kind: "const", value: [99, 111, 110, 102, 105, 103] }] },
+          pda: {
+            seeds: [{ kind: "const", value: [99, 111, 110, 102, 105, 103] }],
+          },
         },
         {
           name: "pool",
@@ -432,13 +596,21 @@ const IDL = {
               { kind: "account", path: "pool" },
               {
                 kind: "const",
-                value: [6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140, 245, 133, 126, 255, 0, 169],
+                value: [
+                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
+                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
+                  245, 133, 126, 255, 0, 169,
+                ],
               },
               { kind: "account", path: "token_mint" },
             ],
             program: {
               kind: "const",
-              value: [140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142, 13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216, 219, 233, 248, 89],
+              value: [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89,
+              ],
             },
           },
         },
@@ -448,7 +620,10 @@ const IDL = {
           writable: true,
           pda: {
             seeds: [
-              { kind: "const", value: [115, 111, 108, 95, 118, 97, 117, 108, 116] },
+              {
+                kind: "const",
+                value: [115, 111, 108, 95, 118, 97, 117, 108, 116],
+              },
               { kind: "account", path: "pool" },
             ],
           },
@@ -462,20 +637,42 @@ const IDL = {
               { kind: "account", path: "user" },
               {
                 kind: "const",
-                value: [6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140, 245, 133, 126, 255, 0, 169],
+                value: [
+                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
+                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
+                  245, 133, 126, 255, 0, 169,
+                ],
               },
               { kind: "account", path: "token_mint" },
             ],
             program: {
               kind: "const",
-              value: [140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142, 13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216, 219, 233, 248, 89],
+              value: [
+                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
+                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
+                219, 233, 248, 89,
+              ],
             },
           },
         },
-        { name: "treasury", docs: ["Protocol treasury for platform fees"], writable: true },
-        { name: "curator", docs: ["Curator of this pool (receives curator fees)"], writable: true },
-        { name: "token_program", address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
-        { name: "associated_token_program", address: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL" },
+        {
+          name: "treasury",
+          docs: ["Protocol treasury for platform fees"],
+          writable: true,
+        },
+        {
+          name: "curator",
+          docs: ["Curator of this pool (receives curator fees)"],
+          writable: true,
+        },
+        {
+          name: "token_program",
+          address: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        },
+        {
+          name: "associated_token_program",
+          address: "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+        },
         { name: "system_program", address: "11111111111111111111111111111111" },
       ],
       args: [{ name: "params", type: { defined: { name: "SwapParams" } } }],
@@ -489,48 +686,119 @@ const IDL = {
         {
           name: "config",
           writable: true,
-          pda: { seeds: [{ kind: "const", value: [99, 111, 110, 102, 105, 103] }] },
+          pda: {
+            seeds: [{ kind: "const", value: [99, 111, 110, 102, 105, 103] }],
+          },
         },
       ],
-      args: [{ name: "params", type: { defined: { name: "UpdateConfigParams" } } }],
+      args: [
+        { name: "params", type: { defined: { name: "UpdateConfigParams" } } },
+      ],
     },
   ],
   accounts: [
     { name: "Config", discriminator: [155, 12, 170, 224, 30, 250, 204, 130] },
-    { name: "InviterStats", discriminator: [133, 87, 60, 176, 12, 201, 188, 45] },
+    {
+      name: "InviterStats",
+      discriminator: [133, 87, 60, 176, 12, 201, 188, 45],
+    },
     { name: "Pool", discriminator: [241, 154, 109, 4, 17, 177, 109, 188] },
     { name: "Referral", discriminator: [30, 235, 136, 224, 106, 107, 49, 64] },
   ],
   errors: [
-    { code: 6000, name: "Unauthorized", msg: "Unauthorized: caller is not the admin" },
+    {
+      code: 6000,
+      name: "Unauthorized",
+      msg: "Unauthorized: caller is not the admin",
+    },
     { code: 6001, name: "ProtocolPaused", msg: "Protocol is currently paused" },
-    { code: 6002, name: "InvalidAuthority", msg: "Invalid authority for this operation" },
-    { code: 6003, name: "PoolAlreadyExists", msg: "Pool already exists for this post" },
+    {
+      code: 6002,
+      name: "InvalidAuthority",
+      msg: "Invalid authority for this operation",
+    },
+    {
+      code: 6003,
+      name: "PoolAlreadyExists",
+      msg: "Pool already exists for this post",
+    },
     { code: 6004, name: "PoolNotActive", msg: "Pool is not active" },
     { code: 6005, name: "PoolNotTradeable", msg: "Pool is not tradeable" },
-    { code: 6006, name: "PoolAlreadyMigrated", msg: "Pool has already migrated" },
-    { code: 6007, name: "MigrationThresholdNotReached", msg: "Pool cannot be migrated yet - threshold not reached" },
-    { code: 6008, name: "LaunchProtectionActive", msg: "Pool is in launch protection period" },
-    { code: 6009, name: "InvalidPoolStatus", msg: "Invalid pool status for this operation" },
+    {
+      code: 6006,
+      name: "PoolAlreadyMigrated",
+      msg: "Pool has already migrated",
+    },
+    {
+      code: 6007,
+      name: "MigrationThresholdNotReached",
+      msg: "Pool cannot be migrated yet - threshold not reached",
+    },
+    {
+      code: 6008,
+      name: "LaunchProtectionActive",
+      msg: "Pool is in launch protection period",
+    },
+    {
+      code: 6009,
+      name: "InvalidPoolStatus",
+      msg: "Invalid pool status for this operation",
+    },
     { code: 6010, name: "PostIdTooLong", msg: "Post ID is too long" },
     { code: 6011, name: "PostIdEmpty", msg: "Post ID cannot be empty" },
-    { code: 6012, name: "TradeBelowMinimum", msg: "Trade amount is below minimum" },
-    { code: 6013, name: "TradeExceedsMaximum", msg: "Trade amount exceeds maximum" },
-    { code: 6014, name: "SlippageExceeded", msg: "Slippage tolerance exceeded" },
-    { code: 6015, name: "InsufficientPoolTokens", msg: "Insufficient tokens in pool" },
-    { code: 6016, name: "InsufficientPoolSol", msg: "Insufficient SOL in pool" },
-    { code: 6017, name: "InsufficientBalance", msg: "Insufficient user balance" },
+    {
+      code: 6012,
+      name: "TradeBelowMinimum",
+      msg: "Trade amount is below minimum",
+    },
+    {
+      code: 6013,
+      name: "TradeExceedsMaximum",
+      msg: "Trade amount exceeds maximum",
+    },
+    {
+      code: 6014,
+      name: "SlippageExceeded",
+      msg: "Slippage tolerance exceeded",
+    },
+    {
+      code: 6015,
+      name: "InsufficientPoolTokens",
+      msg: "Insufficient tokens in pool",
+    },
+    {
+      code: 6016,
+      name: "InsufficientPoolSol",
+      msg: "Insufficient SOL in pool",
+    },
+    {
+      code: 6017,
+      name: "InsufficientBalance",
+      msg: "Insufficient user balance",
+    },
     { code: 6018, name: "ExceedsSupply", msg: "Trade would exceed supply" },
     { code: 6019, name: "ZeroAmount", msg: "Zero amount not allowed" },
-    { code: 6020, name: "ExceedsLaunchProtectionLimit", msg: "Buy amount exceeds launch protection limit" },
+    {
+      code: 6020,
+      name: "ExceedsLaunchProtectionLimit",
+      msg: "Buy amount exceeds launch protection limit",
+    },
     { code: 6021, name: "MathOverflow", msg: "Math overflow occurred" },
     { code: 6022, name: "MathUnderflow", msg: "Math underflow occurred" },
     { code: 6023, name: "DivisionByZero", msg: "Division by zero" },
-    { code: 6024, name: "InvalidCalculation", msg: "Invalid calculation result" },
+    {
+      code: 6024,
+      name: "InvalidCalculation",
+      msg: "Invalid calculation result",
+    },
     { code: 6025, name: "NoFeesToClaim", msg: "No fees to claim" },
     { code: 6026, name: "InvalidFeeConfig", msg: "Invalid fee configuration" },
     { code: 6027, name: "FeeCalculationError", msg: "Fee calculation error" },
-    { code: 6028, name: "ReferralAlreadyRegistered", msg: "Referral already registered" },
+    {
+      code: 6028,
+      name: "ReferralAlreadyRegistered",
+      msg: "Referral already registered",
+    },
     { code: 6029, name: "SelfReferral", msg: "Cannot refer yourself" },
     { code: 6030, name: "InviterNotFound", msg: "Inviter not found" },
     { code: 6031, name: "InvalidReferral", msg: "Invalid referral" },
@@ -540,9 +808,21 @@ const IDL = {
     { code: 6035, name: "InvalidTokenMint", msg: "Invalid token mint" },
     { code: 6036, name: "InvalidTokenAccount", msg: "Invalid token account" },
     { code: 6037, name: "InvalidConfig", msg: "Invalid configuration value" },
-    { code: 6038, name: "AlreadyInitialized", msg: "Configuration already initialized" },
-    { code: 6039, name: "InvalidVirtualReserves", msg: "Invalid virtual reserves" },
-    { code: 6040, name: "InvalidMigrationThreshold", msg: "Invalid migration threshold" },
+    {
+      code: 6038,
+      name: "AlreadyInitialized",
+      msg: "Configuration already initialized",
+    },
+    {
+      code: 6039,
+      name: "InvalidVirtualReserves",
+      msg: "Invalid virtual reserves",
+    },
+    {
+      code: 6040,
+      name: "InvalidMigrationThreshold",
+      msg: "Invalid migration threshold",
+    },
   ],
   types: [
     {
@@ -550,8 +830,16 @@ const IDL = {
       type: {
         kind: "struct" as const,
         fields: [
-          { name: "sol_amount", docs: ["Amount of SOL to spend (in lamports)"], type: "u64" },
-          { name: "min_tokens_out", docs: ["Minimum tokens expected (slippage protection)"], type: "u64" },
+          {
+            name: "sol_amount",
+            docs: ["Amount of SOL to spend (in lamports)"],
+            type: "u64",
+          },
+          {
+            name: "min_tokens_out",
+            docs: ["Minimum tokens expected (slippage protection)"],
+            type: "u64",
+          },
         ],
       },
     },
@@ -596,7 +884,14 @@ const IDL = {
     },
     {
       name: "CurveType",
-      type: { kind: "enum" as const, variants: [{ name: "ConstantProduct" }, { name: "Linear" }, { name: "Exponential" }] },
+      type: {
+        kind: "enum" as const,
+        variants: [
+          { name: "ConstantProduct" },
+          { name: "Linear" },
+          { name: "Exponential" },
+        ],
+      },
     },
     {
       name: "InitializeParams",
@@ -614,7 +909,10 @@ const IDL = {
     },
     {
       name: "InviterStats",
-      docs: ["Inviter stats account tracking referral performance", 'PDA Seed: ["inviter_stats", inviter_wallet.as_bytes()]'],
+      docs: [
+        "Inviter stats account tracking referral performance",
+        'PDA Seed: ["inviter_stats", inviter_wallet.as_bytes()]',
+      ],
       type: {
         kind: "struct" as const,
         fields: [
@@ -631,7 +929,10 @@ const IDL = {
     },
     {
       name: "Pool",
-      docs: ["Red Post Pool - represents a tokenized post", 'PDA Seed: ["pool", post_id.as_bytes()]'],
+      docs: [
+        "Red Post Pool - represents a tokenized post",
+        'PDA Seed: ["pool", post_id.as_bytes()]',
+      ],
       type: {
         kind: "struct" as const,
         fields: [
@@ -669,12 +970,20 @@ const IDL = {
       name: "PoolStatus",
       type: {
         kind: "enum" as const,
-        variants: [{ name: "Active" }, { name: "LaunchProtection" }, { name: "Migrated" }, { name: "Paused" }],
+        variants: [
+          { name: "Active" },
+          { name: "LaunchProtection" },
+          { name: "Migrated" },
+          { name: "Paused" },
+        ],
       },
     },
     {
       name: "Referral",
-      docs: ["Referral account tracking inviter relationships", 'PDA Seed: ["referral", user_wallet.as_bytes()]'],
+      docs: [
+        "Referral account tracking inviter relationships",
+        'PDA Seed: ["referral", user_wallet.as_bytes()]',
+      ],
       type: {
         kind: "struct" as const,
         fields: [
@@ -694,8 +1003,16 @@ const IDL = {
       type: {
         kind: "struct" as const,
         fields: [
-          { name: "token_amount", docs: ["Amount of tokens to sell"], type: "u64" },
-          { name: "min_sol_out", docs: ["Minimum SOL expected (slippage protection)"], type: "u64" },
+          {
+            name: "token_amount",
+            docs: ["Amount of tokens to sell"],
+            type: "u64",
+          },
+          {
+            name: "min_sol_out",
+            docs: ["Minimum SOL expected (slippage protection)"],
+            type: "u64",
+          },
         ],
       },
     },
@@ -704,9 +1021,25 @@ const IDL = {
       type: {
         kind: "struct" as const,
         fields: [
-          { name: "amount_in", docs: ["Amount of input token (SOL lamports or token amount)"], type: "u64" },
-          { name: "minimum_amount_out", docs: ["Minimum amount of output token expected (slippage protection)"], type: "u64" },
-          { name: "is_buy", docs: ["Direction: true = buy (SOL -> Token), false = sell (Token -> SOL)"], type: "bool" },
+          {
+            name: "amount_in",
+            docs: ["Amount of input token (SOL lamports or token amount)"],
+            type: "u64",
+          },
+          {
+            name: "minimum_amount_out",
+            docs: [
+              "Minimum amount of output token expected (slippage protection)",
+            ],
+            type: "u64",
+          },
+          {
+            name: "is_buy",
+            docs: [
+              "Direction: true = buy (SOL -> Token), false = sell (Token -> SOL)",
+            ],
+            type: "bool",
+          },
         ],
       },
     },

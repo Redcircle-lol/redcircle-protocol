@@ -6,7 +6,8 @@ describe("redcircle-protocol", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
-  const program = anchor.workspace.redcircleProtocol as Program<RedcircleProtocol>;
+  const program = anchor.workspace
+    .redcircleProtocol as Program<RedcircleProtocol>;
 
   it("Is initialized!", async () => {
     // Add your test here.

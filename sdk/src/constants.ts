@@ -33,7 +33,7 @@ export const SOL_DECIMALS = 9;
 export const LAMPORTS_PER_SOL = 1_000_000_000;
 
 // Launch protection
-export const LAUNCH_PROTECTION_DURATION = 30; // seconds
+export const LAUNCH_PROTECTION_DURATION = 1800; // 30 minutes
 export const MAX_BUY_DURING_PROTECTION = new BN("1000000000"); // 1 SOL
 
 // Limits
