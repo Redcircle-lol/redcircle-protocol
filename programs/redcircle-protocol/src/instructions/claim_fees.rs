@@ -38,19 +38,24 @@ pub fn claim_creator_fees_handler(ctx: Context<ClaimCreatorFees>) -> Result<()> 
     let claimable = pool.unclaimed_creator_fees;
     require!(claimable > 0, RedCircleError::NoFeesToClaim);
 
-    // Transfer SOL from pool vault to creator
-    **ctx.accounts.pool_sol_vault.try_borrow_mut_lamports()? = ctx
-        .accounts
-        .pool_sol_vault
-        .lamports()
-        .checked_sub(claimable)
-        .ok_or(RedCircleError::MathUnderflow)?;
-    **ctx.accounts.creator.try_borrow_mut_lamports()? = ctx
-        .accounts
-        .creator
-        .lamports()
-        .checked_add(claimable)
-        .ok_or(RedCircleError::MathOverflow)?;
+    // Build sol vault PDA signer seeds
+    let pool_key = pool.key();
+    let sol_vault_bump = pool.sol_vault_bump;
+    let sol_vault_seeds: &[&[u8]] = &[POOL_SOL_VAULT_SEED, pool_key.as_ref(), &[sol_vault_bump]];
+    let sol_vault_signer = &[sol_vault_seeds];
+
+    // Transfer SOL from pool vault to creator via CPI
+    anchor_lang::system_program::transfer(
+        CpiContext::new_with_signer(
+            ctx.accounts.system_program.to_account_info(),
+            anchor_lang::system_program::Transfer {
+                from: ctx.accounts.pool_sol_vault.to_account_info(),
+                to: ctx.accounts.creator.to_account_info(),
+            },
+            sol_vault_signer,
+        ),
+        claimable,
+    )?;
 
     // Reset unclaimed fees
     pool.unclaimed_creator_fees = 0;
@@ -93,19 +98,24 @@ pub fn claim_curator_fees_handler(ctx: Context<ClaimCuratorFees>) -> Result<()> 
     let claimable = pool.unclaimed_curator_fees;
     require!(claimable > 0, RedCircleError::NoFeesToClaim);
 
-    // Transfer SOL from pool vault to curator
-    **ctx.accounts.pool_sol_vault.try_borrow_mut_lamports()? = ctx
-        .accounts
-        .pool_sol_vault
-        .lamports()
-        .checked_sub(claimable)
-        .ok_or(RedCircleError::MathUnderflow)?;
-    **ctx.accounts.curator.try_borrow_mut_lamports()? = ctx
-        .accounts
-        .curator
-        .lamports()
-        .checked_add(claimable)
-        .ok_or(RedCircleError::MathOverflow)?;
+    // Build sol vault PDA signer seeds
+    let pool_key = pool.key();
+    let sol_vault_bump = pool.sol_vault_bump;
+    let sol_vault_seeds: &[&[u8]] = &[POOL_SOL_VAULT_SEED, pool_key.as_ref(), &[sol_vault_bump]];
+    let sol_vault_signer = &[sol_vault_seeds];
+
+    // Transfer SOL from pool vault to curator via CPI
+    anchor_lang::system_program::transfer(
+        CpiContext::new_with_signer(
+            ctx.accounts.system_program.to_account_info(),
+            anchor_lang::system_program::Transfer {
+                from: ctx.accounts.pool_sol_vault.to_account_info(),
+                to: ctx.accounts.curator.to_account_info(),
+            },
+            sol_vault_signer,
+        ),
+        claimable,
+    )?;
 
     // Reset unclaimed fees
     pool.unclaimed_curator_fees = 0;
@@ -149,19 +159,23 @@ pub fn claim_inviter_fees_handler(ctx: Context<ClaimInviterFees>) -> Result<()> 
     let claimable = inviter_stats.unclaimed_fees;
     require!(claimable > 0, RedCircleError::NoFeesToClaim);
 
-    // Transfer SOL from fee vault to inviter
-    **ctx.accounts.fee_vault.try_borrow_mut_lamports()? = ctx
-        .accounts
-        .fee_vault
-        .lamports()
-        .checked_sub(claimable)
-        .ok_or(RedCircleError::MathUnderflow)?;
-    **ctx.accounts.inviter.try_borrow_mut_lamports()? = ctx
-        .accounts
-        .inviter
-        .lamports()
-        .checked_add(claimable)
-        .ok_or(RedCircleError::MathOverflow)?;
+    // Build fee vault PDA signer seeds
+    let fee_vault_bump = ctx.bumps.fee_vault;
+    let fee_vault_seeds: &[&[u8]] = &[FEE_VAULT_SEED, &[fee_vault_bump]];
+    let fee_vault_signer = &[fee_vault_seeds];
+
+    // Transfer SOL from fee vault to inviter via CPI
+    anchor_lang::system_program::transfer(
+        CpiContext::new_with_signer(
+            ctx.accounts.system_program.to_account_info(),
+            anchor_lang::system_program::Transfer {
+                from: ctx.accounts.fee_vault.to_account_info(),
+                to: ctx.accounts.inviter.to_account_info(),
+            },
+            fee_vault_signer,
+        ),
+        claimable,
+    )?;
 
     // Reset unclaimed fees
     inviter_stats.unclaimed_fees = 0;

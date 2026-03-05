@@ -403,48 +403,57 @@ pub fn sell_handler(ctx: Context<Sell>, params: SellParams) -> Result<()> {
         params.token_amount,
     )?;
 
-    // Calculate total to withdraw
-    let total_withdraw = sol_out
-        .checked_add(platform_fee)
-        .ok_or(RedCircleError::MathOverflow)?
-        .checked_add(curator_fee)
-        .ok_or(RedCircleError::MathOverflow)?
+    // Build sol vault PDA signer seeds
+    let pool_key = pool.key();
+    let sol_vault_bump = pool.sol_vault_bump;
+    let sol_vault_seeds: &[&[u8]] = &[POOL_SOL_VAULT_SEED, pool_key.as_ref(), &[sol_vault_bump]];
+    let sol_vault_signer = &[sol_vault_seeds];
+
+    // Transfer SOL from pool vault to user
+    anchor_lang::system_program::transfer(
+        CpiContext::new_with_signer(
+            ctx.accounts.system_program.to_account_info(),
+            anchor_lang::system_program::Transfer {
+                from: ctx.accounts.pool_sol_vault.to_account_info(),
+                to: ctx.accounts.user.to_account_info(),
+            },
+            sol_vault_signer,
+        ),
+        sol_out,
+    )?;
+
+    // Transfer platform + inviter fees to treasury
+    let treasury_fee = platform_fee
         .checked_add(inviter_fee)
         .ok_or(RedCircleError::MathOverflow)?;
+    if treasury_fee > 0 {
+        anchor_lang::system_program::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.system_program.to_account_info(),
+                anchor_lang::system_program::Transfer {
+                    from: ctx.accounts.pool_sol_vault.to_account_info(),
+                    to: ctx.accounts.treasury.to_account_info(),
+                },
+                sol_vault_signer,
+            ),
+            treasury_fee,
+        )?;
+    }
 
-    // Transfer SOL from pool vault
-    **ctx.accounts.pool_sol_vault.try_borrow_mut_lamports()? = ctx
-        .accounts
-        .pool_sol_vault
-        .lamports()
-        .checked_sub(total_withdraw)
-        .ok_or(RedCircleError::MathUnderflow)?;
-
-    **ctx.accounts.user.try_borrow_mut_lamports()? = ctx
-        .accounts
-        .user
-        .lamports()
-        .checked_add(sol_out)
-        .ok_or(RedCircleError::MathOverflow)?;
-
-    // Transfer fees
-    **ctx.accounts.treasury.try_borrow_mut_lamports()? = ctx
-        .accounts
-        .treasury
-        .lamports()
-        .checked_add(
-            platform_fee
-                .checked_add(inviter_fee)
-                .ok_or(RedCircleError::MathOverflow)?,
-        )
-        .ok_or(RedCircleError::MathOverflow)?;
-
-    **ctx.accounts.curator.try_borrow_mut_lamports()? = ctx
-        .accounts
-        .curator
-        .lamports()
-        .checked_add(curator_fee)
-        .ok_or(RedCircleError::MathOverflow)?;
+    // Transfer curator fee
+    if curator_fee > 0 {
+        anchor_lang::system_program::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.system_program.to_account_info(),
+                anchor_lang::system_program::Transfer {
+                    from: ctx.accounts.pool_sol_vault.to_account_info(),
+                    to: ctx.accounts.curator.to_account_info(),
+                },
+                sol_vault_signer,
+            ),
+            curator_fee,
+        )?;
+    }
 
     // Update pool state
     pool.virtual_sol_reserve = pool
