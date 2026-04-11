@@ -20,7 +20,6 @@ pub enum PoolStatus {
     #[default]
     Active,
     LaunchProtection,
-    Migrated,
     Paused,
 }
 
@@ -42,14 +41,12 @@ pub struct Pool {
     pub real_token_reserve: u64,
     pub tokens_sold: u64,
     pub token_supply: u64,
-    pub migration_threshold: u64,
     pub total_volume: u128,
     pub total_fees: u64,
     pub unclaimed_creator_fees: u64,
     pub unclaimed_curator_fees: u64,
     pub created_at: i64,
     pub launch_protection_ends_at: i64,
-    pub migrated_at: i64,
     pub bump: u8,
     pub token_vault_bump: u8,
     pub sol_vault_bump: u8,
@@ -77,14 +74,12 @@ impl Pool {
         8 +  // real_token_reserve
         8 +  // tokens_sold
         8 +  // token_supply
-        8 +  // migration_threshold
         16 + // total_volume
         8 +  // total_fees
         8 +  // unclaimed_creator_fees
         8 +  // unclaimed_curator_fees
         8 +  // created_at
         8 +  // launch_protection_ends_at
-        8 +  // migrated_at
         1 +  // bump
         1 +  // token_vault_bump
         1 +  // sol_vault_bump
@@ -96,10 +91,6 @@ impl Pool {
     pub fn is_in_launch_protection(&self, current_time: i64) -> bool {
         self.status == PoolStatus::LaunchProtection
             && current_time < self.launch_protection_ends_at
-    }
-
-    pub fn can_migrate(&self) -> bool {
-        self.status == PoolStatus::Active && self.real_sol_reserve >= self.migration_threshold
     }
 
     pub fn is_tradeable(&self) -> bool {

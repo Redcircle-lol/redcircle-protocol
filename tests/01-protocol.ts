@@ -47,7 +47,6 @@ import {
   CurveType,
   DEFAULT_INITIAL_VIRTUAL_SOL,
   DEFAULT_INITIAL_VIRTUAL_TOKEN,
-  DEFAULT_MIGRATION_THRESHOLD,
   LAUNCH_PROTECTION_DURATION,
 } from "../sdk/src";
 
@@ -73,7 +72,6 @@ describe("protocol", () => {
         .initialize({
           initialVirtualSol: null,
           initialVirtualToken: null,
-          migrationThreshold: null,
           poolCreationFee: null,
           launchProtectionDuration: null,
           maxBuyDuringProtection: null,
@@ -99,9 +97,6 @@ describe("protocol", () => {
       expect(config.defaultInitialVirtualToken.toString()).to.equal(
         DEFAULT_INITIAL_VIRTUAL_TOKEN.toString()
       );
-      expect(config.defaultMigrationThreshold.toString()).to.equal(
-        DEFAULT_MIGRATION_THRESHOLD.toString()
-      );
     });
 
     it("cannot initialize twice", async () => {
@@ -110,8 +105,7 @@ describe("protocol", () => {
           .initialize({
             initialVirtualSol: null,
             initialVirtualToken: null,
-            migrationThreshold: null,
-            poolCreationFee: null,
+              poolCreationFee: null,
             launchProtectionDuration: null,
             maxBuyDuringProtection: null,
           })
@@ -142,7 +136,6 @@ describe("protocol", () => {
           isPaused: null,
           defaultInitialVirtualSol: null,
           defaultInitialVirtualToken: null,
-          defaultMigrationThreshold: null,
           poolCreationFee: null,
           launchProtectionDuration: null,
           maxBuyDuringProtection: null,
@@ -166,7 +159,6 @@ describe("protocol", () => {
           isPaused: null,
           defaultInitialVirtualSol: null,
           defaultInitialVirtualToken: null,
-          defaultMigrationThreshold: null,
           poolCreationFee: null,
           launchProtectionDuration: null,
           maxBuyDuringProtection: null,
@@ -186,7 +178,6 @@ describe("protocol", () => {
           isPaused: true,
           defaultInitialVirtualSol: null,
           defaultInitialVirtualToken: null,
-          defaultMigrationThreshold: null,
           poolCreationFee: null,
           launchProtectionDuration: null,
           maxBuyDuringProtection: null,
@@ -208,7 +199,6 @@ describe("protocol", () => {
           isPaused: false,
           defaultInitialVirtualSol: null,
           defaultInitialVirtualToken: null,
-          defaultMigrationThreshold: null,
           poolCreationFee: null,
           launchProtectionDuration: null,
           maxBuyDuringProtection: null,
@@ -232,7 +222,6 @@ describe("protocol", () => {
             isPaused: true,
             defaultInitialVirtualSol: null,
             defaultInitialVirtualToken: null,
-            defaultMigrationThreshold: null,
             poolCreationFee: null,
             launchProtectionDuration: null,
             maxBuyDuringProtection: null,
@@ -263,7 +252,6 @@ describe("protocol", () => {
           isPaused: null,
           defaultInitialVirtualSol: null,
           defaultInitialVirtualToken: null,
-          defaultMigrationThreshold: null,
           poolCreationFee: null,
           launchProtectionDuration: new BN(0),
           maxBuyDuringProtection: null,
@@ -285,7 +273,6 @@ describe("protocol", () => {
           curveType: null,
           initialVirtualSol: null,
           initialVirtualToken: null,
-          migrationThreshold: null,
         })
         .accountsStrict({
           curator: curator.publicKey,
@@ -337,8 +324,7 @@ describe("protocol", () => {
             curveType: null,
             initialVirtualSol: null,
             initialVirtualToken: null,
-            migrationThreshold: null,
-          })
+            })
           .accountsStrict({
             curator: curator.publicKey,
             config: configPda,
@@ -368,7 +354,6 @@ describe("protocol", () => {
           isPaused: true,
           defaultInitialVirtualSol: null,
           defaultInitialVirtualToken: null,
-          defaultMigrationThreshold: null,
           poolCreationFee: null,
           launchProtectionDuration: null,
           maxBuyDuringProtection: null,
@@ -399,8 +384,7 @@ describe("protocol", () => {
             curveType: null,
             initialVirtualSol: null,
             initialVirtualToken: null,
-            migrationThreshold: null,
-          })
+            })
           .accountsStrict({
             curator: curator.publicKey,
             config: configPda,
@@ -428,7 +412,6 @@ describe("protocol", () => {
           isPaused: false,
           defaultInitialVirtualSol: null,
           defaultInitialVirtualToken: null,
-          defaultMigrationThreshold: null,
           poolCreationFee: null,
           launchProtectionDuration: null,
           maxBuyDuringProtection: null,
@@ -459,7 +442,6 @@ describe("protocol", () => {
           isPaused: null,
           defaultInitialVirtualSol: null,
           defaultInitialVirtualToken: null,
-          defaultMigrationThreshold: null,
           poolCreationFee: null,
           launchProtectionDuration: new BN(0),
           maxBuyDuringProtection: null,
@@ -479,7 +461,6 @@ describe("protocol", () => {
           curveType: 1, // Linear
           initialVirtualSol: null,
           initialVirtualToken: null,
-          migrationThreshold: null,
         })
         .accountsStrict({
           curator: curator.publicKey,
@@ -523,7 +504,6 @@ describe("protocol", () => {
           isPaused: null,
           defaultInitialVirtualSol: null,
           defaultInitialVirtualToken: null,
-          defaultMigrationThreshold: null,
           poolCreationFee: null,
           launchProtectionDuration: new BN(LAUNCH_PROTECTION_DURATION),
           maxBuyDuringProtection: null,
@@ -556,7 +536,6 @@ describe("protocol", () => {
           curveType: null,
           initialVirtualSol: null,
           initialVirtualToken: null,
-          migrationThreshold: null,
         })
         .accountsStrict({
           curator: curator.publicKey,
@@ -673,7 +652,6 @@ describe("protocol", () => {
           isPaused: null,
           defaultInitialVirtualSol: null,
           defaultInitialVirtualToken: null,
-          defaultMigrationThreshold: null,
           poolCreationFee: null,
           launchProtectionDuration: new BN(0),
           maxBuyDuringProtection: null,
@@ -715,7 +693,6 @@ describe("protocol", () => {
           isPaused: false,
           defaultInitialVirtualSol: null,
           defaultInitialVirtualToken: null,
-          defaultMigrationThreshold: null,
           poolCreationFee: null,
           launchProtectionDuration: null,
           maxBuyDuringProtection: null,
@@ -735,7 +712,6 @@ describe("protocol", () => {
           isPaused: true,
           defaultInitialVirtualSol: null,
           defaultInitialVirtualToken: null,
-          defaultMigrationThreshold: null,
           poolCreationFee: null,
           launchProtectionDuration: null,
           maxBuyDuringProtection: null,
@@ -822,7 +798,6 @@ describe("protocol", () => {
           isPaused: false,
           defaultInitialVirtualSol: null,
           defaultInitialVirtualToken: null,
-          defaultMigrationThreshold: null,
           poolCreationFee: null,
           launchProtectionDuration: null,
           maxBuyDuringProtection: null,

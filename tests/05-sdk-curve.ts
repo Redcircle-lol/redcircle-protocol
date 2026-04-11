@@ -511,7 +511,6 @@ describe("SDK: type parsers", () => {
     expect(parsePoolStatus({ launchProtection: {} })).to.equal(
       PoolStatus.LaunchProtection
     );
-    expect(parsePoolStatus({ migrated: {} })).to.equal(PoolStatus.Migrated);
     expect(parsePoolStatus({ paused: {} })).to.equal(PoolStatus.Paused);
   });
 

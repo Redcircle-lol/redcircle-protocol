@@ -30,7 +30,6 @@ pub struct Initialize<'info> {
 pub struct InitializeParams {
     pub initial_virtual_sol: Option<u64>,
     pub initial_virtual_token: Option<u64>,
-    pub migration_threshold: Option<u64>,
     pub pool_creation_fee: Option<u64>,
     pub launch_protection_duration: Option<i64>,
     pub max_buy_during_protection: Option<u64>,
@@ -55,10 +54,6 @@ pub fn initialize_handler(ctx: Context<Initialize>, params: InitializeParams) ->
     config.default_initial_virtual_token = params
         .initial_virtual_token
         .unwrap_or(DEFAULT_INITIAL_VIRTUAL_TOKEN);
-
-    config.default_migration_threshold = params
-        .migration_threshold
-        .unwrap_or(DEFAULT_MIGRATION_THRESHOLD);
 
     config.pool_creation_fee = params.pool_creation_fee.unwrap_or(0);
 
@@ -100,7 +95,6 @@ pub struct UpdateConfigParams {
     pub is_paused: Option<bool>,
     pub default_initial_virtual_sol: Option<u64>,
     pub default_initial_virtual_token: Option<u64>,
-    pub default_migration_threshold: Option<u64>,
     pub pool_creation_fee: Option<u64>,
     pub launch_protection_duration: Option<i64>,
     pub max_buy_during_protection: Option<u64>,
@@ -132,11 +126,6 @@ pub fn update_config_handler(ctx: Context<UpdateConfig>, params: UpdateConfigPar
     if let Some(virtual_token) = params.default_initial_virtual_token {
         require!(virtual_token > 0, RedCircleError::InvalidVirtualReserves);
         config.default_initial_virtual_token = virtual_token;
-    }
-
-    if let Some(threshold) = params.default_migration_threshold {
-        require!(threshold > 0, RedCircleError::InvalidMigrationThreshold);
-        config.default_migration_threshold = threshold;
     }
 
     if let Some(fee) = params.pool_creation_fee {

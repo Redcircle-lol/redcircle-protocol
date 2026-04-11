@@ -143,7 +143,6 @@ export class RedCircleClient {
       .initialize({
         initialVirtualSol: params.initialVirtualSol ?? null,
         initialVirtualToken: params.initialVirtualToken ?? null,
-        migrationThreshold: params.migrationThreshold ?? null,
         poolCreationFee: params.poolCreationFee ?? null,
         launchProtectionDuration: params.launchProtectionDuration ?? null,
         maxBuyDuringProtection: params.maxBuyDuringProtection ?? null,
@@ -169,7 +168,6 @@ export class RedCircleClient {
         isPaused: params.isPaused ?? null,
         defaultInitialVirtualSol: params.defaultInitialVirtualSol ?? null,
         defaultInitialVirtualToken: params.defaultInitialVirtualToken ?? null,
-        defaultMigrationThreshold: params.defaultMigrationThreshold ?? null,
         poolCreationFee: params.poolCreationFee ?? null,
         launchProtectionDuration: params.launchProtectionDuration ?? null,
         maxBuyDuringProtection: params.maxBuyDuringProtection ?? null,
@@ -218,7 +216,6 @@ export class RedCircleClient {
         curveType: params.curveType != null ? params.curveType : null,
         initialVirtualSol: params.initialVirtualSol ?? null,
         initialVirtualToken: params.initialVirtualToken ?? null,
-        migrationThreshold: params.migrationThreshold ?? null,
       })
       .accountsStrict({
         curator,

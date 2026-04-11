@@ -22,12 +22,6 @@ pub enum RedCircleError {
     #[msg("Pool is not tradeable")]
     PoolNotTradeable,
 
-    #[msg("Pool has already migrated")]
-    PoolAlreadyMigrated,
-
-    #[msg("Pool cannot be migrated yet - threshold not reached")]
-    MigrationThresholdNotReached,
-
     #[msg("Pool is in launch protection period")]
     LaunchProtectionActive,
 
@@ -129,7 +123,4 @@ pub enum RedCircleError {
 
     #[msg("Invalid virtual reserves")]
     InvalidVirtualReserves,
-
-    #[msg("Invalid migration threshold")]
-    InvalidMigrationThreshold,
 }

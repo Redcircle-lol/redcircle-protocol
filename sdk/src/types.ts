@@ -4,7 +4,6 @@ import BN from "bn.js";
 export enum PoolStatus {
   Active = "active",
   LaunchProtection = "launchProtection",
-  Migrated = "migrated",
   Paused = "paused",
 }
 
@@ -25,7 +24,6 @@ export interface Config {
   totalFeesCollected: BN;
   defaultInitialVirtualSol: BN;
   defaultInitialVirtualToken: BN;
-  defaultMigrationThreshold: BN;
   poolCreationFee: BN;
   launchProtectionDuration: BN;
   maxBuyDuringProtection: BN;
@@ -40,7 +38,6 @@ export interface Pool {
   status:
     | { active: {} }
     | { launchProtection: {} }
-    | { migrated: {} }
     | { paused: {} };
   curveType: { constantProduct: {} } | { linear: {} } | { exponential: {} };
   virtualSolReserve: BN;
@@ -49,14 +46,12 @@ export interface Pool {
   realTokenReserve: BN;
   tokensSold: BN;
   tokenSupply: BN;
-  migrationThreshold: BN;
   totalVolume: BN;
   totalFees: BN;
   unclaimedCreatorFees: BN;
   unclaimedCuratorFees: BN;
   createdAt: BN;
   launchProtectionEndsAt: BN;
-  migratedAt: BN;
   bump: number;
   tokenVaultBump: number;
   solVaultBump: number;
@@ -90,7 +85,6 @@ export interface InviterStats {
 export interface InitializeParams {
   initialVirtualSol: BN | null;
   initialVirtualToken: BN | null;
-  migrationThreshold: BN | null;
   poolCreationFee: BN | null;
   launchProtectionDuration: BN | null;
   maxBuyDuringProtection: BN | null;
@@ -102,7 +96,6 @@ export interface UpdateConfigParams {
   isPaused: boolean | null;
   defaultInitialVirtualSol: BN | null;
   defaultInitialVirtualToken: BN | null;
-  defaultMigrationThreshold: BN | null;
   poolCreationFee: BN | null;
   launchProtectionDuration: BN | null;
   maxBuyDuringProtection: BN | null;
@@ -116,7 +109,6 @@ export interface CreatePoolParams {
   curveType?: CurveType;
   initialVirtualSol?: BN;
   initialVirtualToken?: BN;
-  migrationThreshold?: BN;
 }
 
 export interface SwapParams {
@@ -140,7 +132,6 @@ export interface SellParams {
 export function parsePoolStatus(status: Pool["status"]): PoolStatus {
   if ("active" in status) return PoolStatus.Active;
   if ("launchProtection" in status) return PoolStatus.LaunchProtection;
-  if ("migrated" in status) return PoolStatus.Migrated;
   if ("paused" in status) return PoolStatus.Paused;
   throw new Error("Unknown pool status");
 }

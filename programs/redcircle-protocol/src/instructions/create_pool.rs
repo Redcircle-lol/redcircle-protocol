@@ -84,7 +84,6 @@ pub struct CreatePoolParams {
     pub curve_type: Option<u8>,
     pub initial_virtual_sol: Option<u64>,
     pub initial_virtual_token: Option<u64>,
-    pub migration_threshold: Option<u64>,
 }
 
 pub fn create_pool_handler(ctx: Context<CreatePool>, params: CreatePoolParams) -> Result<()> {
@@ -156,11 +155,6 @@ pub fn create_pool_handler(ctx: Context<CreatePool>, params: CreatePoolParams) -
     pool.token_supply = pool.virtual_token_reserve;
     pool.tokens_sold = 0;
 
-    // Set migration threshold
-    pool.migration_threshold = params
-        .migration_threshold
-        .unwrap_or(config.default_migration_threshold);
-
     // Initialize counters
     pool.total_volume = 0;
     pool.total_fees = 0;
@@ -170,7 +164,6 @@ pub fn create_pool_handler(ctx: Context<CreatePool>, params: CreatePoolParams) -
     // Set timestamps
     pool.created_at = clock.unix_timestamp;
     pool.launch_protection_ends_at = clock.unix_timestamp + config.launch_protection_duration;
-    pool.migrated_at = 0;
 
     // Set initial status
     if config.launch_protection_duration > 0 {

@@ -46,10 +46,6 @@ pub const DEFAULT_INITIAL_VIRTUAL_TOKEN: u64 = 1_000_000_000_000_000;
 /// 1 billion tokens with 6 decimals
 pub const DEFAULT_TOKEN_SUPPLY: u64 = 1_000_000_000_000_000;
 
-/// Default migration threshold (SOL collected to trigger graduation)
-/// 85 SOL = 85_000_000_000 lamports
-pub const DEFAULT_MIGRATION_THRESHOLD: u64 = 85_000_000_000;
-
 /// Token decimals for RPT tokens
 pub const TOKEN_DECIMALS: u8 = 6;
 

@@ -26,7 +26,6 @@ export const BPS_DENOMINATOR = 10_000;
 export const DEFAULT_INITIAL_VIRTUAL_SOL = new BN("30000000000"); // 30 SOL
 export const DEFAULT_INITIAL_VIRTUAL_TOKEN = new BN("1000000000000000"); // 1B tokens (6 decimals)
 export const DEFAULT_TOKEN_SUPPLY = new BN("1000000000000000"); // 1B tokens (6 decimals)
-export const DEFAULT_MIGRATION_THRESHOLD = new BN("85000000000"); // 85 SOL
 
 export const TOKEN_DECIMALS = 6;
 export const SOL_DECIMALS = 9;
