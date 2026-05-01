@@ -4,7 +4,6 @@ use crate::state::Config;
 use anchor_lang::prelude::*;
 
 /// Initialize the protocol configuration
-/// This should only be called once by the protocol admin
 #[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(mut)]
@@ -55,7 +54,7 @@ pub fn initialize_handler(ctx: Context<Initialize>, params: InitializeParams) ->
         .initial_virtual_token
         .unwrap_or(DEFAULT_INITIAL_VIRTUAL_TOKEN);
 
-    config.pool_creation_fee = params.pool_creation_fee.unwrap_or(0);
+    config.pool_creation_fee = params.pool_creation_fee.unwrap_or(POOL_CREATION_FEE);
 
     config.launch_protection_duration = params
         .launch_protection_duration

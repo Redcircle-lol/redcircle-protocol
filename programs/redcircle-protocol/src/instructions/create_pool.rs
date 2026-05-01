@@ -1,10 +1,10 @@
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token::{Mint, MintTo, Token, TokenAccount, mint_to};
+use anchor_spl::token::{mint_to, Mint, MintTo, Token, TokenAccount};
 
 use crate::constants::*;
 use crate::error::RedCircleError;
-use crate::state::{Config, CurveType, Pool, PoolStatus};
+use crate::state::{Config, Pool, PoolStatus};
 
 /// Create a new pool for a post (tokenize the post)
 #[derive(Accounts)]
@@ -62,7 +62,6 @@ pub struct CreatePool<'info> {
     )]
     pub pool_sol_vault: SystemAccount<'info>,
 
-    /// Treasury to receive pool creation fee (if any)
     /// CHECK: Validated against config
     #[account(
         mut,
@@ -81,17 +80,12 @@ pub struct CreatePoolParams {
     pub name: String,
     pub symbol: String,
     pub uri: String,
-    pub curve_type: Option<u8>,
     pub initial_virtual_sol: Option<u64>,
     pub initial_virtual_token: Option<u64>,
 }
 
 pub fn create_pool_handler(ctx: Context<CreatePool>, params: CreatePoolParams) -> Result<()> {
-    // Validate inputs
-    require!(
-        !params.post_id.is_empty(),
-        RedCircleError::PostIdEmpty
-    );
+    require!(!params.post_id.is_empty(), RedCircleError::PostIdEmpty);
     require!(
         params.post_id.len() <= MAX_POST_ID_LEN,
         RedCircleError::PostIdTooLong
@@ -133,14 +127,6 @@ pub fn create_pool_handler(ctx: Context<CreatePool>, params: CreatePoolParams) -
     pool.curator = ctx.accounts.curator.key();
     pool.creator = Pubkey::default(); // Will be set when creator claims
 
-    // Set curve type from u8 or default
-    pool.curve_type = match params.curve_type {
-        Some(0) => CurveType::ConstantProduct,
-        Some(1) => CurveType::Linear,
-        Some(2) => CurveType::Exponential,
-        _ => CurveType::ConstantProduct,
-    };
-
     // Set virtual reserves from params or config defaults
     pool.virtual_sol_reserve = params
         .initial_virtual_sol
@@ -151,7 +137,7 @@ pub fn create_pool_handler(ctx: Context<CreatePool>, params: CreatePoolParams) -
 
     // Initialize real reserves
     pool.real_sol_reserve = 0;
-    pool.real_token_reserve = pool.virtual_token_reserve; // Start with full token supply
+    pool.real_token_reserve = pool.virtual_token_reserve;
     pool.token_supply = pool.virtual_token_reserve;
     pool.tokens_sold = 0;
 
@@ -163,7 +149,7 @@ pub fn create_pool_handler(ctx: Context<CreatePool>, params: CreatePoolParams) -
 
     // Set timestamps
     pool.created_at = clock.unix_timestamp;
-    pool.launch_protection_ends_at = clock.unix_timestamp + config.launch_protection_duration;
+    pool.launch_protection_ends_at = pool.created_at + config.launch_protection_duration;
 
     // Set initial status
     if config.launch_protection_duration > 0 {

@@ -48,16 +48,6 @@ pub mod redcircle_protocol {
         instructions::swap::swap_handler(ctx, params)
     }
 
-    /// Simplified buy instruction (SOL -> Token)
-    pub fn buy(ctx: Context<Buy>, params: BuyParams) -> Result<()> {
-        instructions::buy_sell::buy_handler(ctx, params)
-    }
-
-    /// Simplified sell instruction (Token -> SOL)
-    pub fn sell(ctx: Context<Sell>, params: SellParams) -> Result<()> {
-        instructions::buy_sell::sell_handler(ctx, params)
-    }
-
     // FEE INSTRUCTIONS
 
     /// Claim accumulated creator fees from a pool

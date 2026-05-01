@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token::{Mint, Token, TokenAccount, Transfer, transfer};
+use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
 
 use crate::constants::*;
 use crate::curve::{calculate_sol_out, calculate_tokens_out};
@@ -64,7 +64,6 @@ pub struct Swap<'info> {
     )]
     pub user_token_account: Account<'info, TokenAccount>,
 
-    /// Protocol treasury for platform fees
     /// CHECK: Validated against config
     #[account(
         mut,
@@ -72,7 +71,6 @@ pub struct Swap<'info> {
     )]
     pub treasury: UncheckedAccount<'info>,
 
-    /// Curator of this pool (receives curator fees)
     /// CHECK: Validated against pool
     #[account(
         mut,
@@ -109,7 +107,6 @@ pub fn swap_handler(mut ctx: Context<Swap>, params: SwapParams) -> Result<()> {
     // Check launch protection
     if pool.status == PoolStatus::LaunchProtection {
         if clock.unix_timestamp >= pool.launch_protection_ends_at {
-            // Launch protection ended, update status
             pool.status = PoolStatus::Active;
         } else if params.is_buy {
             // During protection, enforce max buy limit
@@ -146,7 +143,6 @@ fn execute_buy(ctx: &mut Context<Swap>, params: SwapParams) -> Result<()> {
         ctx.accounts.pool.virtual_sol_reserve,
         ctx.accounts.pool.virtual_token_reserve,
         sol_after_fee,
-        ctx.accounts.pool.curve_type,
     )?;
 
     // Check slippage
@@ -309,7 +305,6 @@ fn execute_sell(ctx: &mut Context<Swap>, params: SwapParams) -> Result<()> {
         ctx.accounts.pool.virtual_sol_reserve,
         ctx.accounts.pool.virtual_token_reserve,
         params.amount_in,
-        ctx.accounts.pool.curve_type,
     )?;
 
     // Calculate fee (3% of SOL output)

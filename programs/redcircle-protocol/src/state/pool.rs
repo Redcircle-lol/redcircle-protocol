@@ -2,25 +2,19 @@ use anchor_lang::prelude::*;
 
 use crate::constants::*;
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
-pub enum CurveType {
-    ConstantProduct,
-    Linear,
-    Exponential,
-}
-
-impl Default for CurveType {
-    fn default() -> Self {
-        CurveType::ConstantProduct
-    }
-}
-
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace, Default)]
 pub enum PoolStatus {
     #[default]
     Active,
     LaunchProtection,
     Paused,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace, Default)]
+pub enum PoolModel {
+    #[default]
+    Curve,
+    DLMM,
 }
 
 /// Red Post Pool - represents a tokenized post
@@ -34,7 +28,7 @@ pub struct Pool {
     pub curator: Pubkey,
     pub creator: Pubkey,
     pub status: PoolStatus,
-    pub curve_type: CurveType,
+    pub model: PoolModel,
     pub virtual_sol_reserve: u64,
     pub virtual_token_reserve: u64,
     pub real_sol_reserve: u64,
@@ -67,7 +61,7 @@ impl Pool {
         32 + // curator
         32 + // creator
         1 +  // status
-        1 +  // curve_type
+        1 +  // model
         8 +  // virtual_sol_reserve
         8 +  // virtual_token_reserve
         8 +  // real_sol_reserve
@@ -89,11 +83,13 @@ impl Pool {
         4 + 32; // reserved
 
     pub fn is_in_launch_protection(&self, current_time: i64) -> bool {
-        self.status == PoolStatus::LaunchProtection
-            && current_time < self.launch_protection_ends_at
+        self.status == PoolStatus::LaunchProtection && current_time < self.launch_protection_ends_at
     }
 
     pub fn is_tradeable(&self) -> bool {
-        matches!(self.status, PoolStatus::Active | PoolStatus::LaunchProtection)
+        matches!(
+            self.status,
+            PoolStatus::Active | PoolStatus::LaunchProtection
+        )
     }
 }

@@ -7,3 +7,7 @@ test-ledger
 .yarn
 .idea/
 dist/
+.claude/
+.codex/
+CLAUDE.md
+AGENTS.md

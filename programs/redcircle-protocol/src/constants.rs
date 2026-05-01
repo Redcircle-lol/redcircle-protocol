@@ -32,6 +32,9 @@ pub const CURATOR_FEE_BPS: u64 = 50;
 /// Basis points denominator (100% = 10000 bps)
 pub const BPS_DENOMINATOR: u64 = 10000;
 
+/// Pool creation fee: 1% (100 points)
+pub const POOL_CREATION_FEE: u64 = 100;
+
 // BONDING CURVE DEFAULTS
 
 /// Default initial virtual SOL reserve (in lamports)
