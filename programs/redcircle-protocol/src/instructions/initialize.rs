@@ -3,14 +3,12 @@ use crate::error::RedCircleError;
 use crate::state::Config;
 use anchor_lang::prelude::*;
 
-/// Initialize the protocol configuration
 #[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
 
-    /// The treasury wallet that receives platform fees
-    /// CHECK: This is just a wallet address for receiving fees
+    /// CHECK: Treasury wallet
     pub treasury: UncheckedAccount<'info>,
 
     #[account(
@@ -27,8 +25,8 @@ pub struct Initialize<'info> {
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct InitializeParams {
-    pub initial_virtual_sol: Option<u64>,
-    pub initial_virtual_token: Option<u64>,
+    pub sigmoid_floor_price: Option<u64>,
+    pub sigmoid_cap_price: Option<u64>,
     pub pool_creation_fee: Option<u64>,
     pub launch_protection_duration: Option<i64>,
     pub max_buy_during_protection: Option<u64>,
@@ -46,13 +44,19 @@ pub fn initialize_handler(ctx: Context<Initialize>, params: InitializeParams) ->
     config.total_volume = 0;
     config.total_fees_collected = 0;
 
-    config.default_initial_virtual_sol = params
-        .initial_virtual_sol
-        .unwrap_or(DEFAULT_INITIAL_VIRTUAL_SOL);
+    config.default_sigmoid_floor_price = params
+        .sigmoid_floor_price
+        .unwrap_or(DEFAULT_SIGMOID_FLOOR_PRICE);
 
-    config.default_initial_virtual_token = params
-        .initial_virtual_token
-        .unwrap_or(DEFAULT_INITIAL_VIRTUAL_TOKEN);
+    config.default_sigmoid_cap_price = params
+        .sigmoid_cap_price
+        .unwrap_or(DEFAULT_SIGMOID_CAP_PRICE);
+
+    require!(
+        config.default_sigmoid_cap_price > config.default_sigmoid_floor_price
+            && config.default_sigmoid_floor_price > 0,
+        RedCircleError::InvalidSigmoidConfig
+    );
 
     config.pool_creation_fee = params.pool_creation_fee.unwrap_or(POOL_CREATION_FEE);
 
@@ -92,8 +96,8 @@ pub struct UpdateConfigParams {
     pub new_admin: Option<Pubkey>,
     pub new_treasury: Option<Pubkey>,
     pub is_paused: Option<bool>,
-    pub default_initial_virtual_sol: Option<u64>,
-    pub default_initial_virtual_token: Option<u64>,
+    pub default_sigmoid_floor_price: Option<u64>,
+    pub default_sigmoid_cap_price: Option<u64>,
     pub pool_creation_fee: Option<u64>,
     pub launch_protection_duration: Option<i64>,
     pub max_buy_during_protection: Option<u64>,
@@ -117,14 +121,21 @@ pub fn update_config_handler(ctx: Context<UpdateConfig>, params: UpdateConfigPar
         msg!("Protocol paused: {}", is_paused);
     }
 
-    if let Some(virtual_sol) = params.default_initial_virtual_sol {
-        require!(virtual_sol > 0, RedCircleError::InvalidVirtualReserves);
-        config.default_initial_virtual_sol = virtual_sol;
+    if let Some(floor_price) = params.default_sigmoid_floor_price {
+        require!(floor_price > 0, RedCircleError::InvalidSigmoidConfig);
+        require!(
+            floor_price < config.default_sigmoid_cap_price,
+            RedCircleError::InvalidSigmoidConfig
+        );
+        config.default_sigmoid_floor_price = floor_price;
     }
 
-    if let Some(virtual_token) = params.default_initial_virtual_token {
-        require!(virtual_token > 0, RedCircleError::InvalidVirtualReserves);
-        config.default_initial_virtual_token = virtual_token;
+    if let Some(cap_price) = params.default_sigmoid_cap_price {
+        require!(
+            cap_price > config.default_sigmoid_floor_price,
+            RedCircleError::InvalidSigmoidConfig
+        );
+        config.default_sigmoid_cap_price = cap_price;
     }
 
     if let Some(fee) = params.pool_creation_fee {

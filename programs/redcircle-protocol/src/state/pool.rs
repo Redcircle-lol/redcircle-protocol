@@ -13,7 +13,8 @@ pub enum PoolStatus {
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace, Default)]
 pub enum PoolModel {
     #[default]
-    Curve,
+    SigmoidBootstrap,
+    MigrationPending,
     DLMM,
 }
 
@@ -22,23 +23,22 @@ pub enum PoolModel {
 #[account]
 #[derive(InitSpace)]
 pub struct Pool {
-    #[max_len(16)]
+    #[max_len(32)]
     pub post_id: String,
     pub token_mint: Pubkey,
     pub curator: Pubkey,
     pub creator: Pubkey,
     pub status: PoolStatus,
     pub model: PoolModel,
-    pub virtual_sol_reserve: u64,
-    pub virtual_token_reserve: u64,
-    pub real_sol_reserve: u64,
-    pub real_token_reserve: u64,
+    pub liquidity_sol_reserve: u64,
+    pub liquidity_token_reserve: u64,
     pub tokens_sold: u64,
     pub token_supply: u64,
     pub total_volume: u128,
     pub total_fees: u64,
     pub unclaimed_creator_fees: u64,
     pub unclaimed_curator_fees: u64,
+    pub unclaimed_growth_fees: u64,
     pub created_at: i64,
     pub launch_protection_ends_at: i64,
     pub bump: u8,
@@ -62,16 +62,15 @@ impl Pool {
         32 + // creator
         1 +  // status
         1 +  // model
-        8 +  // virtual_sol_reserve
-        8 +  // virtual_token_reserve
-        8 +  // real_sol_reserve
-        8 +  // real_token_reserve
+        8 +  // liquidity_sol_reserve
+        8 +  // liquidity_token_reserve
         8 +  // tokens_sold
         8 +  // token_supply
         16 + // total_volume
         8 +  // total_fees
         8 +  // unclaimed_creator_fees
         8 +  // unclaimed_curator_fees
+        8 +  // unclaimed_growth_fees
         8 +  // created_at
         8 +  // launch_protection_ends_at
         1 +  // bump

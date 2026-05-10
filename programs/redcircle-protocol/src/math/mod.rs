@@ -1,5 +1,5 @@
-pub mod curve;
 pub mod dlmm;
+pub mod sigmoid;
 
-pub use curve::*;
 pub use dlmm::*;
+pub use sigmoid::*;

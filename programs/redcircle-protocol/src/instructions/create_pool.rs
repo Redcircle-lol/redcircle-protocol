@@ -4,17 +4,16 @@ use anchor_spl::token::{mint_to, Mint, MintTo, Token, TokenAccount};
 
 use crate::constants::*;
 use crate::error::RedCircleError;
-use crate::state::{Config, Pool, PoolStatus};
+use crate::state::{
+    Config, DlmmConfig, MarketState, MigrationConfig, Pool, PoolModel, PoolStatus, SigmoidConfig,
+};
 
-/// Create a new pool for a post (tokenize the post)
 #[derive(Accounts)]
 #[instruction(params: CreatePoolParams)]
 pub struct CreatePool<'info> {
-    /// The curator who is tokenizing this post
     #[account(mut)]
     pub curator: Signer<'info>,
 
-    /// Global protocol configuration
     #[account(
         mut,
         seeds = [CONFIG_SEED],
@@ -23,7 +22,6 @@ pub struct CreatePool<'info> {
     )]
     pub config: Account<'info, Config>,
 
-    /// The pool account for this post
     #[account(
         init,
         payer = curator,
@@ -33,7 +31,15 @@ pub struct CreatePool<'info> {
     )]
     pub pool: Account<'info, Pool>,
 
-    /// The token mint for this pool's RPT token
+    #[account(
+        init,
+        payer = curator,
+        space = MarketState::SIZE,
+        seeds = [MARKET_STATE_SEED, pool.key().as_ref()],
+        bump
+    )]
+    pub market_state: Account<'info, MarketState>,
+
     #[account(
         init,
         payer = curator,
@@ -44,7 +50,6 @@ pub struct CreatePool<'info> {
     )]
     pub token_mint: Account<'info, Mint>,
 
-    /// Pool's token vault to hold unminted/unsold tokens
     #[account(
         init,
         payer = curator,
@@ -53,8 +58,7 @@ pub struct CreatePool<'info> {
     )]
     pub pool_token_vault: Account<'info, TokenAccount>,
 
-    /// Pool's SOL vault (PDA that holds collected SOL)
-    /// CHECK: This is a PDA that will hold SOL
+    /// CHECK: PDA that will hold SOL
     #[account(
         mut,
         seeds = [POOL_SOL_VAULT_SEED, pool.key().as_ref()],
@@ -62,7 +66,7 @@ pub struct CreatePool<'info> {
     )]
     pub pool_sol_vault: SystemAccount<'info>,
 
-    /// CHECK: Validated against config
+    /// CHECK: Treasury wallet
     #[account(
         mut,
         constraint = treasury.key() == config.treasury @ RedCircleError::InvalidAuthority
@@ -80,8 +84,14 @@ pub struct CreatePoolParams {
     pub name: String,
     pub symbol: String,
     pub uri: String,
-    pub initial_virtual_sol: Option<u64>,
-    pub initial_virtual_token: Option<u64>,
+    pub token_supply: Option<u64>,
+    pub sigmoid_floor_price: Option<u64>,
+    pub sigmoid_cap_price: Option<u64>,
+    pub sigmoid_midpoint_supply: Option<u64>,
+    pub sigmoid_steepness_bps: Option<u64>,
+    pub migration_supply_threshold_bps: Option<u16>,
+    pub migration_min_sol_reserve: Option<u64>,
+    pub dlmm_bin_step_bps: Option<u16>,
 }
 
 pub fn create_pool_handler(ctx: Context<CreatePool>, params: CreatePoolParams) -> Result<()> {
@@ -105,6 +115,7 @@ pub fn create_pool_handler(ctx: Context<CreatePool>, params: CreatePoolParams) -
 
     let config = &ctx.accounts.config;
     let pool = &mut ctx.accounts.pool;
+    let market_state = &mut ctx.accounts.market_state;
     let clock = Clock::get()?;
 
     // Pay pool creation fee if configured
@@ -127,48 +138,92 @@ pub fn create_pool_handler(ctx: Context<CreatePool>, params: CreatePoolParams) -
     pool.curator = ctx.accounts.curator.key();
     pool.creator = Pubkey::default(); // Will be set when creator claims
 
-    // Set virtual reserves from params or config defaults
-    pool.virtual_sol_reserve = params
-        .initial_virtual_sol
-        .unwrap_or(config.default_initial_virtual_sol);
-    pool.virtual_token_reserve = params
-        .initial_virtual_token
-        .unwrap_or(config.default_initial_virtual_token);
-
     // Initialize real reserves
-    pool.real_sol_reserve = 0;
-    pool.real_token_reserve = pool.virtual_token_reserve;
-    pool.token_supply = pool.virtual_token_reserve;
+    pool.token_supply = params.token_supply.unwrap_or(DEFAULT_TOKEN_SUPPLY);
+    require!(pool.token_supply > 0, RedCircleError::InvalidConfig);
+    pool.liquidity_sol_reserve = 0;
+    pool.liquidity_token_reserve = pool.token_supply;
     pool.tokens_sold = 0;
+    pool.model = PoolModel::SigmoidBootstrap;
 
-    // Initialize counters
+    let sigmoid = SigmoidConfig {
+        token_supply: pool.token_supply,
+        floor_price_lamports: params
+            .sigmoid_floor_price
+            .unwrap_or(config.default_sigmoid_floor_price),
+        cap_price_lamports: params
+            .sigmoid_cap_price
+            .unwrap_or(config.default_sigmoid_cap_price),
+        midpoint_supply: params
+            .sigmoid_midpoint_supply
+            .unwrap_or(pool.token_supply / 2),
+        steepness_bps: params
+            .sigmoid_steepness_bps
+            .unwrap_or(DEFAULT_SIGMOID_STEEPNESS_BPS),
+        band_bps: SIGMOID_BAND_BPS,
+    };
+    sigmoid.validate()?;
+
+    let migration = MigrationConfig {
+        supply_threshold_bps: params
+            .migration_supply_threshold_bps
+            .unwrap_or(DEFAULT_MIGRATION_SUPPLY_THRESHOLD_BPS),
+        min_sol_reserve: params
+            .migration_min_sol_reserve
+            .unwrap_or(DEFAULT_MIGRATION_MIN_SOL_RESERVE),
+    };
+    migration.validate()?;
+
+    let dlmm = DlmmConfig {
+        bin_step_bps: params
+            .dlmm_bin_step_bps
+            .unwrap_or(DEFAULT_DLMM_BIN_STEP_BPS),
+        active_bin_id: 0,
+    };
+    dlmm.validate()?;
+
+    market_state.pool = pool.key();
+    market_state.model = PoolModel::SigmoidBootstrap;
+    market_state.sigmoid = sigmoid;
+    market_state.migration = migration;
+    market_state.dlmm = dlmm;
+    market_state.allocated_token_liquidity = 0;
+    market_state.allocated_sol_liquidity = 0;
+    market_state.total_trade_volume = 0;
+    market_state.total_fees_earned = 0;
+    market_state.platform_fees_earned = 0;
+    market_state.creator_fees_earned = 0;
+    market_state.curator_fees_earned = 0;
+    market_state.growth_fees_earned = 0;
+    market_state.total_trades = 0;
+    market_state.buy_trades = 0;
+    market_state.sell_trades = 0;
+    market_state.migrated_at = 0;
+    market_state.bump = ctx.bumps.market_state;
+
     pool.total_volume = 0;
     pool.total_fees = 0;
     pool.unclaimed_creator_fees = 0;
     pool.unclaimed_curator_fees = 0;
+    pool.unclaimed_growth_fees = 0;
 
-    // Set timestamps
     pool.created_at = clock.unix_timestamp;
     pool.launch_protection_ends_at = pool.created_at + config.launch_protection_duration;
 
-    // Set initial status
     if config.launch_protection_duration > 0 {
         pool.status = PoolStatus::LaunchProtection;
     } else {
         pool.status = PoolStatus::Active;
     }
 
-    // Store bumps
     pool.bump = ctx.bumps.pool;
     pool.token_vault_bump = 0; // ATA doesn't have bump
     pool.sol_vault_bump = ctx.bumps.pool_sol_vault;
 
-    // Store metadata
     pool.name = params.name;
     pool.symbol = params.symbol;
     pool.uri = params.uri;
 
-    // Mint total supply to pool vault
     let post_id = pool.post_id.clone();
     let pool_bump = pool.bump;
     let seeds = &[POOL_SEED, post_id.as_bytes(), &[pool_bump]];
@@ -187,7 +242,6 @@ pub fn create_pool_handler(ctx: Context<CreatePool>, params: CreatePoolParams) -
         pool.token_supply,
     )?;
 
-    // Update global config
     let config = &mut ctx.accounts.config;
     config.total_pools = config
         .total_pools
@@ -197,8 +251,14 @@ pub fn create_pool_handler(ctx: Context<CreatePool>, params: CreatePoolParams) -
     msg!("Pool created for post: {}", pool.post_id);
     msg!("Token mint: {}", pool.token_mint);
     msg!("Curator: {}", pool.curator);
-    msg!("Initial virtual SOL: {}", pool.virtual_sol_reserve);
-    msg!("Initial virtual tokens: {}", pool.virtual_token_reserve);
+    msg!(
+        "Sigmoid floor price: {}",
+        market_state.sigmoid.floor_price_lamports
+    );
+    msg!(
+        "Sigmoid cap price: {}",
+        market_state.sigmoid.cap_price_lamports
+    );
 
     Ok(())
 }

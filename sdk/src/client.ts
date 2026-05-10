@@ -1,47 +1,63 @@
 import * as anchor from "@coral-xyz/anchor";
 import {
   Connection,
+  ComputeBudgetProgram,
   PublicKey,
   SystemProgram,
   TransactionInstruction,
   TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
-import BN from "bn.js";
 import {
   PROGRAM_ID,
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "./constants";
 import {
-  findConfigPda,
-  findPoolPda,
-  findTokenMintPda,
-  findPoolSolVaultPda,
-  findFeeVaultPda,
-  findReferralPda,
-  findInviterStatsPda,
-  findAssociatedTokenAddress,
   derivePoolAddresses,
+  findAssociatedTokenAddress,
+  findBinPda,
+  findConfigPda,
+  findMarketStatePda,
+  findPoolPda,
+  findPoolSolVaultPda,
+  findPositionPda,
+  findTokenMintPda,
 } from "./pda";
 import {
-  Config,
-  Pool,
-  Referral,
-  InviterStats,
-  CurveType,
-  CreatePoolParams,
+  AddLiquidityParams,
+  Bin,
   BuyParams,
-  SellParams,
-  SwapParams,
+  Config,
+  CreatePoolParams,
+  InitBinParams,
   InitializeParams,
+  MarketState,
+  MigratePoolParams,
+  Pool,
+  Position,
+  RemoveLiquidityParams,
+  SellParams,
+  SetPoolStatusParams,
+  SwapParams,
   UpdateConfigParams,
 } from "./types";
-
 import idl from "./idl";
 
 export interface RedCircleClientOpts {
   programId?: PublicKey;
+}
+
+export interface SwapAccountParams {
+  user: PublicKey;
+  postId: string;
+  treasury: PublicKey;
+  curator: PublicKey;
+  activeBin?: PublicKey | null;
+}
+
+export interface BuildTransactionOpts {
+  computeUnitLimit?: number;
 }
 
 export class RedCircleClient {
@@ -55,16 +71,16 @@ export class RedCircleClient {
     this.program = new anchor.Program(idl as unknown as anchor.Idl, provider);
   }
 
-  // ---------------------------------------------------------------------------
-  // PDA helpers (exposed for convenience)
-  // ---------------------------------------------------------------------------
-
   getConfigPda(): PublicKey {
     return findConfigPda(this.programId)[0];
   }
 
   getPoolPda(postId: string): PublicKey {
     return findPoolPda(postId, this.programId)[0];
+  }
+
+  getMarketStatePda(pool: PublicKey): PublicKey {
+    return findMarketStatePda(pool, this.programId)[0];
   }
 
   getTokenMintPda(pool: PublicKey): PublicKey {
@@ -75,74 +91,85 @@ export class RedCircleClient {
     return findPoolSolVaultPda(pool, this.programId)[0];
   }
 
-  getFeeVaultPda(): PublicKey {
-    return findFeeVaultPda(this.programId)[0];
+  getBinPda(pool: PublicKey, binId: number): PublicKey {
+    return findBinPda(pool, binId, this.programId)[0];
   }
 
-  getReferralPda(user: PublicKey): PublicKey {
-    return findReferralPda(user, this.programId)[0];
-  }
-
-  getInviterStatsPda(inviter: PublicKey): PublicKey {
-    return findInviterStatsPda(inviter, this.programId)[0];
+  getPositionPda(
+    pool: PublicKey,
+    owner: PublicKey,
+    lowerBinId: number,
+    upperBinId: number
+  ): PublicKey {
+    return findPositionPda(
+      pool,
+      owner,
+      lowerBinId,
+      upperBinId,
+      this.programId
+    )[0];
   }
 
   derivePoolAddresses(postId: string) {
     return derivePoolAddresses(postId, this.programId);
   }
 
-  // ---------------------------------------------------------------------------
-  // Account fetchers
-  // ---------------------------------------------------------------------------
-
   private get accounts() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return this.program.account as any;
   }
 
   async fetchConfig(): Promise<Config> {
-    const config = this.getConfigPda();
-    return (await this.accounts.config.fetch(config)) as Config;
+    return (await this.accounts.config.fetch(this.getConfigPda())) as Config;
   }
 
   async fetchPool(postId: string): Promise<Pool> {
-    const pool = this.getPoolPda(postId);
-    return (await this.accounts.pool.fetch(pool)) as Pool;
+    return this.fetchPoolByAddress(this.getPoolPda(postId));
   }
 
   async fetchPoolByAddress(address: PublicKey): Promise<Pool> {
     return (await this.accounts.pool.fetch(address)) as Pool;
   }
 
-  async fetchReferral(user: PublicKey): Promise<Referral> {
-    const referral = this.getReferralPda(user);
-    return (await this.accounts.referral.fetch(referral)) as Referral;
+  async fetchMarketState(postId: string): Promise<MarketState> {
+    const pool = this.getPoolPda(postId);
+    return this.fetchMarketStateByAddress(this.getMarketStatePda(pool));
   }
 
-  async fetchInviterStats(inviter: PublicKey): Promise<InviterStats> {
-    const stats = this.getInviterStatsPda(inviter);
-    return (await this.accounts.inviterStats.fetch(stats)) as InviterStats;
+  async fetchMarketStateByAddress(address: PublicKey): Promise<MarketState> {
+    return (await this.accounts.marketState.fetch(address)) as MarketState;
+  }
+
+  async fetchBin(pool: PublicKey, binId: number): Promise<Bin> {
+    return (await this.accounts.bin.fetch(this.getBinPda(pool, binId))) as Bin;
+  }
+
+  async fetchPosition(
+    pool: PublicKey,
+    owner: PublicKey,
+    lowerBinId: number,
+    upperBinId: number
+  ): Promise<Position> {
+    return (await this.accounts.position.fetch(
+      this.getPositionPda(pool, owner, lowerBinId, upperBinId)
+    )) as Position;
   }
 
   async fetchAllPools(): Promise<{ publicKey: PublicKey; account: Pool }[]> {
-    const accounts = await this.accounts.pool.all();
-    return accounts as { publicKey: PublicKey; account: Pool }[];
+    return (await this.accounts.pool.all()) as {
+      publicKey: PublicKey;
+      account: Pool;
+    }[];
   }
-
-  // ---------------------------------------------------------------------------
-  // Instructions - Admin
-  // ---------------------------------------------------------------------------
 
   async initialize(
     admin: PublicKey,
     treasury: PublicKey,
     params: Partial<InitializeParams> = {}
   ): Promise<TransactionInstruction> {
-    const config = this.getConfigPda();
     return await this.program.methods
       .initialize({
-        initialVirtualSol: params.initialVirtualSol ?? null,
-        initialVirtualToken: params.initialVirtualToken ?? null,
+        sigmoidFloorPrice: params.sigmoidFloorPrice ?? null,
+        sigmoidCapPrice: params.sigmoidCapPrice ?? null,
         poolCreationFee: params.poolCreationFee ?? null,
         launchProtectionDuration: params.launchProtectionDuration ?? null,
         maxBuyDuringProtection: params.maxBuyDuringProtection ?? null,
@@ -150,7 +177,7 @@ export class RedCircleClient {
       .accountsStrict({
         admin,
         treasury,
-        config,
+        config: this.getConfigPda(),
         systemProgram: SystemProgram.programId,
       })
       .instruction();
@@ -160,21 +187,20 @@ export class RedCircleClient {
     admin: PublicKey,
     params: Partial<UpdateConfigParams> = {}
   ): Promise<TransactionInstruction> {
-    const config = this.getConfigPda();
     return await this.program.methods
       .updateConfig({
         newAdmin: params.newAdmin ?? null,
         newTreasury: params.newTreasury ?? null,
         isPaused: params.isPaused ?? null,
-        defaultInitialVirtualSol: params.defaultInitialVirtualSol ?? null,
-        defaultInitialVirtualToken: params.defaultInitialVirtualToken ?? null,
+        defaultSigmoidFloorPrice: params.defaultSigmoidFloorPrice ?? null,
+        defaultSigmoidCapPrice: params.defaultSigmoidCapPrice ?? null,
         poolCreationFee: params.poolCreationFee ?? null,
         launchProtectionDuration: params.launchProtectionDuration ?? null,
         maxBuyDuringProtection: params.maxBuyDuringProtection ?? null,
       })
       .accountsStrict({
         admin,
-        config,
+        config: this.getConfigPda(),
       })
       .instruction();
   }
@@ -184,22 +210,16 @@ export class RedCircleClient {
     postId: string,
     creator: PublicKey
   ): Promise<TransactionInstruction> {
-    const pool = this.getPoolPda(postId);
-    const config = this.getConfigPda();
     return await this.program.methods
       .setCreator()
       .accountsStrict({
         authority,
-        pool,
-        config,
+        pool: this.getPoolPda(postId),
+        config: this.getConfigPda(),
         creator,
       })
       .instruction();
   }
-
-  // ---------------------------------------------------------------------------
-  // Instructions - Pool
-  // ---------------------------------------------------------------------------
 
   async createPool(
     curator: PublicKey,
@@ -213,14 +233,20 @@ export class RedCircleClient {
         name: params.name,
         symbol: params.symbol,
         uri: params.uri,
-        curveType: params.curveType != null ? params.curveType : null,
-        initialVirtualSol: params.initialVirtualSol ?? null,
-        initialVirtualToken: params.initialVirtualToken ?? null,
+        tokenSupply: params.tokenSupply ?? null,
+        sigmoidFloorPrice: params.sigmoidFloorPrice ?? null,
+        sigmoidCapPrice: params.sigmoidCapPrice ?? null,
+        sigmoidMidpointSupply: params.sigmoidMidpointSupply ?? null,
+        sigmoidSteepnessBps: params.sigmoidSteepnessBps ?? null,
+        migrationSupplyThresholdBps: params.migrationSupplyThresholdBps ?? null,
+        migrationMinSolReserve: params.migrationMinSolReserve ?? null,
+        dlmmBinStepBps: params.dlmmBinStepBps ?? null,
       })
       .accountsStrict({
         curator,
         config: addrs.config,
         pool: addrs.pool,
+        marketState: addrs.marketState,
         tokenMint: addrs.tokenMint,
         poolTokenVault: addrs.poolTokenVault,
         poolSolVault: addrs.poolSolVault,
@@ -232,27 +258,131 @@ export class RedCircleClient {
       .instruction();
   }
 
-  // ---------------------------------------------------------------------------
-  // Instructions - Trading
-  // ---------------------------------------------------------------------------
-
-  private buildTradeAccounts(
-    user: PublicKey,
+  async migratePool(
+    authority: PublicKey,
     postId: string,
-    treasury: PublicKey,
-    curatorPubkey: PublicKey
-  ) {
+    params: MigratePoolParams
+  ): Promise<TransactionInstruction> {
     const addrs = this.derivePoolAddresses(postId);
+    return await this.program.methods
+      .migratePool(params)
+      .accountsStrict({
+        authority,
+        config: addrs.config,
+        pool: addrs.pool,
+        marketState: addrs.marketState,
+      })
+      .instruction();
+  }
+
+  async initBin(
+    authority: PublicKey,
+    postId: string,
+    params: InitBinParams
+  ): Promise<TransactionInstruction> {
+    const addrs = this.derivePoolAddresses(postId);
+    return await this.program.methods
+      .initBin(params)
+      .accountsStrict({
+        authority,
+        config: addrs.config,
+        pool: addrs.pool,
+        marketState: addrs.marketState,
+        bin: this.getBinPda(addrs.pool, params.binId),
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction();
+  }
+
+  async addLiquidity(
+    authority: PublicKey,
+    postId: string,
+    binId: number,
+    params: AddLiquidityParams
+  ): Promise<TransactionInstruction> {
+    const addrs = this.derivePoolAddresses(postId);
+    return await this.program.methods
+      .addLiquidity(params)
+      .accountsStrict({
+        authority,
+        config: addrs.config,
+        pool: addrs.pool,
+        marketState: addrs.marketState,
+        bin: this.getBinPda(addrs.pool, binId),
+        tokenMint: addrs.tokenMint,
+        poolTokenVault: addrs.poolTokenVault,
+        poolSolVault: addrs.poolSolVault,
+        authorityTokenAccount: findAssociatedTokenAddress(
+          authority,
+          addrs.tokenMint
+        ),
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction();
+  }
+
+  async removeLiquidity(
+    authority: PublicKey,
+    postId: string,
+    binId: number,
+    params: RemoveLiquidityParams
+  ): Promise<TransactionInstruction> {
+    const addrs = this.derivePoolAddresses(postId);
+    return await this.program.methods
+      .removeLiquidity(params)
+      .accountsStrict({
+        authority,
+        config: addrs.config,
+        pool: addrs.pool,
+        marketState: addrs.marketState,
+        bin: this.getBinPda(addrs.pool, binId),
+        tokenMint: addrs.tokenMint,
+        poolTokenVault: addrs.poolTokenVault,
+        poolSolVault: addrs.poolSolVault,
+        authorityTokenAccount: findAssociatedTokenAddress(
+          authority,
+          addrs.tokenMint
+        ),
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction();
+  }
+
+  async setPoolStatus(
+    admin: PublicKey,
+    postId: string,
+    params: SetPoolStatusParams
+  ): Promise<TransactionInstruction> {
+    const addrs = this.derivePoolAddresses(postId);
+    return await this.program.methods
+      .setPoolStatus(params)
+      .accountsStrict({
+        admin,
+        config: addrs.config,
+        pool: addrs.pool,
+      })
+      .instruction();
+  }
+
+  private buildSwapAccounts(params: SwapAccountParams) {
+    const addrs = this.derivePoolAddresses(params.postId);
     return {
-      user,
+      user: params.user,
       config: addrs.config,
       pool: addrs.pool,
+      marketState: addrs.marketState,
       tokenMint: addrs.tokenMint,
       poolTokenVault: addrs.poolTokenVault,
       poolSolVault: addrs.poolSolVault,
-      userTokenAccount: findAssociatedTokenAddress(user, addrs.tokenMint),
-      treasury,
-      curator: curatorPubkey,
+      activeBin: params.activeBin ?? null,
+      userTokenAccount: findAssociatedTokenAddress(
+        params.user,
+        addrs.tokenMint
+      ),
+      treasury: params.treasury,
+      curator: params.curator,
       tokenProgram: TOKEN_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       systemProgram: SystemProgram.programId,
@@ -260,73 +390,52 @@ export class RedCircleClient {
   }
 
   async swap(
-    user: PublicKey,
-    postId: string,
-    treasury: PublicKey,
-    curator: PublicKey,
+    accounts: SwapAccountParams,
     params: SwapParams
   ): Promise<TransactionInstruction> {
-    const accounts = this.buildTradeAccounts(user, postId, treasury, curator);
     return await this.program.methods
-      .swap({
-        amountIn: params.amountIn,
-        minimumAmountOut: params.minimumAmountOut,
-        isBuy: params.isBuy,
-      })
-      .accountsStrict(accounts)
+      .swap(params)
+      .accountsStrict(this.buildSwapAccounts(accounts) as any)
       .instruction();
   }
 
   async buy(
-    user: PublicKey,
-    postId: string,
-    treasury: PublicKey,
-    curator: PublicKey,
+    accounts: Omit<SwapAccountParams, "activeBin"> & {
+      activeBin?: PublicKey | null;
+    },
     params: BuyParams
   ): Promise<TransactionInstruction> {
-    const accounts = this.buildTradeAccounts(user, postId, treasury, curator);
-    return await this.program.methods
-      .buy({
-        solAmount: params.solAmount,
-        minTokensOut: params.minTokensOut,
-      })
-      .accountsStrict(accounts)
-      .instruction();
+    return this.swap(accounts, {
+      amountIn: params.solAmount,
+      minimumAmountOut: params.minTokensOut,
+      isBuy: true,
+    });
   }
 
   async sell(
-    user: PublicKey,
-    postId: string,
-    treasury: PublicKey,
-    curator: PublicKey,
+    accounts: Omit<SwapAccountParams, "activeBin"> & {
+      activeBin?: PublicKey | null;
+    },
     params: SellParams
   ): Promise<TransactionInstruction> {
-    const accounts = this.buildTradeAccounts(user, postId, treasury, curator);
-    return await this.program.methods
-      .sell({
-        tokenAmount: params.tokenAmount,
-        minSolOut: params.minSolOut,
-      })
-      .accountsStrict(accounts)
-      .instruction();
+    return this.swap(accounts, {
+      amountIn: params.tokenAmount,
+      minimumAmountOut: params.minSolOut,
+      isBuy: false,
+    });
   }
-
-  // ---------------------------------------------------------------------------
-  // Instructions - Fees
-  // ---------------------------------------------------------------------------
 
   async claimCreatorFees(
     creator: PublicKey,
     postId: string
   ): Promise<TransactionInstruction> {
     const pool = this.getPoolPda(postId);
-    const poolSolVault = this.getPoolSolVaultPda(pool);
     return await this.program.methods
       .claimCreatorFees()
       .accountsStrict({
         creator,
         pool,
-        poolSolVault,
+        poolSolVault: this.getPoolSolVaultPda(pool),
         systemProgram: SystemProgram.programId,
       })
       .instruction();
@@ -337,71 +446,54 @@ export class RedCircleClient {
     postId: string
   ): Promise<TransactionInstruction> {
     const pool = this.getPoolPda(postId);
-    const poolSolVault = this.getPoolSolVaultPda(pool);
     return await this.program.methods
       .claimCuratorFees()
       .accountsStrict({
         curator,
         pool,
-        poolSolVault,
+        poolSolVault: this.getPoolSolVaultPda(pool),
         systemProgram: SystemProgram.programId,
       })
       .instruction();
   }
 
-  async claimInviterFees(inviter: PublicKey): Promise<TransactionInstruction> {
-    const inviterStats = this.getInviterStatsPda(inviter);
-    const feeVault = this.getFeeVaultPda();
-    return await this.program.methods
-      .claimInviterFees()
-      .accountsStrict({
-        inviter,
-        inviterStats,
-        feeVault,
-        systemProgram: SystemProgram.programId,
-      })
-      .instruction();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Instructions - Referral
-  // ---------------------------------------------------------------------------
-
-  async registerReferral(
-    user: PublicKey,
-    inviter: PublicKey
+  async claimGrowthFees(
+    admin: PublicKey,
+    postId: string,
+    growthRecipient: PublicKey
   ): Promise<TransactionInstruction> {
-    const referral = this.getReferralPda(user);
-    const inviterStats = this.getInviterStatsPda(inviter);
+    const pool = this.getPoolPda(postId);
     return await this.program.methods
-      .registerReferral()
+      .claimGrowthFees()
       .accountsStrict({
-        user,
-        inviter,
-        referral,
-        inviterStats,
+        admin,
+        config: this.getConfigPda(),
+        pool,
+        poolSolVault: this.getPoolSolVaultPda(pool),
+        growthRecipient,
         systemProgram: SystemProgram.programId,
       })
       .instruction();
   }
 
-  // ---------------------------------------------------------------------------
-  // Convenience: send-and-confirm helpers
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Build a versioned transaction from instructions, using latest blockhash.
-   * The caller can then sign + send it.
-   */
   async buildTransaction(
     payer: PublicKey,
-    instructions: TransactionInstruction[]
+    instructions: TransactionInstruction[],
+    opts: BuildTransactionOpts = {}
   ): Promise<VersionedTransaction> {
     const { blockhash } = await this.connection.getLatestBlockhash();
+    const finalInstructions = [...instructions];
+    if (opts.computeUnitLimit != null) {
+      finalInstructions.unshift(
+        ComputeBudgetProgram.setComputeUnitLimit({
+          units: opts.computeUnitLimit,
+        })
+      );
+    }
     const message = new TransactionMessage({
       payerKey: payer,
       recentBlockhash: blockhash,
-      instructions,
+      instructions: finalInstructions,
     }).compileToV0Message();
     return new VersionedTransaction(message);
   }

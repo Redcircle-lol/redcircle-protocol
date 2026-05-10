@@ -1,7 +1,7 @@
 pub mod constants;
-pub mod curve;
 pub mod error;
 pub mod instructions;
+pub mod math;
 pub mod state;
 
 use anchor_lang::prelude::*;
@@ -9,6 +9,7 @@ use anchor_lang::prelude::*;
 pub use constants::*;
 pub use error::*;
 pub use instructions::*;
+pub use math::*;
 pub use state::*;
 
 declare_id!("8vdyo4hfP1ZjmnnEuGrqhHNupt2ZjZ7LmfRtU4kCXS5L");
@@ -42,6 +43,34 @@ pub mod redcircle_protocol {
         instructions::create_pool::create_pool_handler(ctx, params)
     }
 
+    /// Migrate a post pool from sigmoid bootstrap to DLMM trading.
+    pub fn migrate_pool(ctx: Context<MigratePool>, params: MigratePoolParams) -> Result<()> {
+        instructions::migrate_pool::migrate_pool_handler(ctx, params)
+    }
+
+    /// Initialize a DLMM bin for a migrated post pool.
+    pub fn init_bin(ctx: Context<InitBin>, params: InitBinParams) -> Result<()> {
+        instructions::init_bins::init_bin_handler(ctx, params)
+    }
+
+    /// Add liquidity to a DLMM bin.
+    pub fn add_liquidity(ctx: Context<AddLiquidity>, params: AddLiquidityParams) -> Result<()> {
+        instructions::add_liquidity::add_liquidity_handler(ctx, params)
+    }
+
+    /// Remove liquidity from a DLMM bin.
+    pub fn remove_liquidity(
+        ctx: Context<RemoveLiquidity>,
+        params: RemoveLiquidityParams,
+    ) -> Result<()> {
+        instructions::remove_liquidity::remove_liquidity_handler(ctx, params)
+    }
+
+    /// Admin emergency control for a single post pool.
+    pub fn set_pool_status(ctx: Context<SetPoolStatus>, params: SetPoolStatusParams) -> Result<()> {
+        instructions::pool_admin::set_pool_status_handler(ctx, params)
+    }
+
     // TRADING INSTRUCTIONS
 
     pub fn swap(ctx: Context<Swap>, params: SwapParams) -> Result<()> {
@@ -62,17 +91,9 @@ pub mod redcircle_protocol {
         instructions::claim_fees::claim_curator_fees_handler(ctx)
     }
 
-    /// Claim accumulated inviter fees
-    /// Only callable by the inviter who referred a user
-    pub fn claim_inviter_fees(ctx: Context<ClaimInviterFees>) -> Result<()> {
-        instructions::claim_fees::claim_inviter_fees_handler(ctx)
-    }
-
-    // REFERRAL INSTRUCTIONS
-
-    /// Register a referral relationship
-    /// A user registers with their inviter (referrer)
-    pub fn register_referral(ctx: Context<RegisterReferral>) -> Result<()> {
-        instructions::referral::register_referral_handler(ctx)
+    /// Claim accumulated growth fees from a pool
+    /// Only callable by the protocol admin, payable to an admin-selected wallet
+    pub fn claim_growth_fees(ctx: Context<ClaimGrowthFees>) -> Result<()> {
+        instructions::claim_fees::claim_growth_fees_handler(ctx)
     }
 }

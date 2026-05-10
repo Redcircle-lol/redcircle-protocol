@@ -4,9 +4,9 @@ import {
   CONFIG_SEED,
   POOL_SEED,
   POOL_SOL_VAULT_SEED,
-  FEE_VAULT_SEED,
-  REFERRAL_SEED,
-  INVITER_STATS_SEED,
+  MARKET_STATE_SEED,
+  BIN_SEED,
+  POSITION_SEED,
   LP_MINT_SEED,
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -24,6 +24,16 @@ export function findPoolPda(
 ): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
     [POOL_SEED, Buffer.from(postId)],
+    programId
+  );
+}
+
+export function findMarketStatePda(
+  pool: PublicKey,
+  programId: PublicKey = PROGRAM_ID
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [MARKET_STATE_SEED, pool.toBuffer()],
     programId
   );
 }
@@ -48,28 +58,32 @@ export function findPoolSolVaultPda(
   );
 }
 
-export function findFeeVaultPda(
+export function findBinPda(
+  pool: PublicKey,
+  binId: number,
   programId: PublicKey = PROGRAM_ID
 ): [PublicKey, number] {
-  return PublicKey.findProgramAddressSync([FEE_VAULT_SEED], programId);
-}
-
-export function findReferralPda(
-  user: PublicKey,
-  programId: PublicKey = PROGRAM_ID
-): [PublicKey, number] {
+  const binIdBuffer = Buffer.alloc(4);
+  binIdBuffer.writeInt32LE(binId, 0);
   return PublicKey.findProgramAddressSync(
-    [REFERRAL_SEED, user.toBuffer()],
+    [BIN_SEED, pool.toBuffer(), binIdBuffer],
     programId
   );
 }
 
-export function findInviterStatsPda(
-  inviter: PublicKey,
+export function findPositionPda(
+  pool: PublicKey,
+  owner: PublicKey,
+  lowerBinId: number,
+  upperBinId: number,
   programId: PublicKey = PROGRAM_ID
 ): [PublicKey, number] {
+  const lower = Buffer.alloc(4);
+  lower.writeInt32LE(lowerBinId, 0);
+  const upper = Buffer.alloc(4);
+  upper.writeInt32LE(upperBinId, 0);
   return PublicKey.findProgramAddressSync(
-    [INVITER_STATS_SEED, inviter.toBuffer()],
+    [POSITION_SEED, pool.toBuffer(), owner.toBuffer(), lower, upper],
     programId
   );
 }
@@ -85,22 +99,23 @@ export function findAssociatedTokenAddress(
   return address;
 }
 
-/** Derive all PDAs needed for a pool given its postId. */
 export function derivePoolAddresses(
   postId: string,
   programId: PublicKey = PROGRAM_ID
 ) {
   const [pool] = findPoolPda(postId, programId);
+  const [marketState] = findMarketStatePda(pool, programId);
   const [tokenMint] = findTokenMintPda(pool, programId);
   const [poolSolVault] = findPoolSolVaultPda(pool, programId);
   const poolTokenVault = findAssociatedTokenAddress(pool, tokenMint);
   const [config] = findConfigPda(programId);
 
   return {
+    config,
     pool,
+    marketState,
     tokenMint,
     poolSolVault,
     poolTokenVault,
-    config,
   };
 }

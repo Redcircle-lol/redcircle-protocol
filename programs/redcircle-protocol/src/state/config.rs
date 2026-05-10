@@ -11,8 +11,8 @@ pub struct Config {
     pub total_pools: u64,
     pub total_volume: u128,
     pub total_fees_collected: u128,
-    pub default_initial_virtual_sol: u64,
-    pub default_initial_virtual_token: u64,
+    pub default_sigmoid_floor_price: u64,
+    pub default_sigmoid_cap_price: u64,
     pub pool_creation_fee: u64,
     pub launch_protection_duration: i64,
     pub max_buy_during_protection: u64,
@@ -29,8 +29,8 @@ impl Config {
         8 +  // total_pools
         16 + // total_volume
         16 + // total_fees_collected
-        8 +  // default_initial_virtual_sol
-        8 +  // default_initial_virtual_token
+        8 +  // default_sigmoid_floor_price
+        8 +  // default_sigmoid_cap_price
         8 +  // pool_creation_fee
         8 +  // launch_protection_duration
         8 +  // max_buy_during_protection

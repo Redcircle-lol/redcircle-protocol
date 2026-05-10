@@ -1,231 +1,270 @@
 import BN from "bn.js";
-import { CurveType } from "./types";
-import { BPS_DENOMINATOR, TOTAL_FEE_BPS } from "./constants";
+import {
+  BPS_DENOMINATOR,
+  CREATOR_FEE_BPS,
+  CURATOR_FEE_BPS,
+  GROWTH_FEE_BPS,
+  MAX_SIGMOID_STEPS,
+  PLATFORM_FEE_BPS,
+  TOKEN_UNIT,
+  TOTAL_FEE_BPS,
+} from "./constants";
+import { SigmoidConfig } from "./types";
 
-const PRECISION = new BN("1000000000000"); // 10^12
-const PRICE_PRECISION = new BN("1000000000"); // 10^9
-
-// --- Constant Product (x * y = k) ---
-
-function constantProductBuy(
-  virtualSolReserve: BN,
-  virtualTokenReserve: BN,
-  solIn: BN
-): BN {
-  const k = virtualSolReserve.mul(virtualTokenReserve);
-  const newSolReserve = virtualSolReserve.add(solIn);
-  const newTokenReserve = k.div(newSolReserve);
-  return virtualTokenReserve.sub(newTokenReserve);
+export interface SigmoidQuote {
+  amountOut: BN;
+  grossSol: BN;
 }
 
-function constantProductSell(
-  virtualSolReserve: BN,
-  virtualTokenReserve: BN,
-  tokensIn: BN
-): BN {
-  const k = virtualSolReserve.mul(virtualTokenReserve);
-  const newTokenReserve = virtualTokenReserve.add(tokensIn);
-  const newSolReserve = k.div(newTokenReserve);
-  return virtualSolReserve.sub(newSolReserve);
+export interface FeeBreakdown {
+  total: BN;
+  platform: BN;
+  creator: BN;
+  curator: BN;
+  growth: BN;
 }
 
-// --- Linear ---
+const ZERO = new BN(0);
+const BPS = new BN(BPS_DENOMINATOR);
 
-function linearBuy(
-  virtualSolReserve: BN,
-  virtualTokenReserve: BN,
-  solIn: BN
-): BN {
-  const currentPrice = virtualSolReserve
-    .mul(PRECISION)
-    .div(virtualTokenReserve);
-  const baseTokens = solIn.mul(PRECISION).div(currentPrice);
-  const cpTokens = constantProductBuy(
-    virtualSolReserve,
-    virtualTokenReserve,
-    solIn
-  );
-  return baseTokens.add(cpTokens).div(new BN(2));
-}
-
-function linearSell(
-  virtualSolReserve: BN,
-  virtualTokenReserve: BN,
-  tokensIn: BN
-): BN {
-  const currentPrice = virtualSolReserve
-    .mul(PRECISION)
-    .div(virtualTokenReserve);
-  const baseSol = tokensIn.mul(currentPrice).div(PRECISION);
-  const cpSol = constantProductSell(
-    virtualSolReserve,
-    virtualTokenReserve,
-    tokensIn
-  );
-  return baseSol.add(cpSol).div(new BN(2));
-}
-
-// --- Exponential ---
-
-function exponentialBuy(
-  virtualSolReserve: BN,
-  virtualTokenReserve: BN,
-  solIn: BN
-): BN {
-  const cpTokens = constantProductBuy(
-    virtualSolReserve,
-    virtualTokenReserve,
-    solIn
-  );
-  const sizeFactor = solIn.muln(100).div(virtualSolReserve);
-  const reductionBps = BN.min(sizeFactor, new BN(50));
-  return cpTokens.mul(new BN(10000).sub(reductionBps)).div(new BN(10000));
-}
-
-function exponentialSell(
-  virtualSolReserve: BN,
-  virtualTokenReserve: BN,
-  tokensIn: BN
-): BN {
-  const cpSol = constantProductSell(
-    virtualSolReserve,
-    virtualTokenReserve,
-    tokensIn
-  );
-  const sizeFactor = tokensIn.muln(100).div(virtualTokenReserve);
-  const reductionBps = BN.min(sizeFactor, new BN(50));
-  return cpSol.mul(new BN(10000).sub(reductionBps)).div(new BN(10000));
-}
-
-// --- Public API ---
-
-/** Calculate tokens received for a given SOL input (before fees). */
-export function calculateTokensOut(
-  virtualSolReserve: BN,
-  virtualTokenReserve: BN,
-  solIn: BN,
-  curveType: CurveType = CurveType.ConstantProduct
-): BN {
-  switch (curveType) {
-    case CurveType.ConstantProduct:
-      return constantProductBuy(virtualSolReserve, virtualTokenReserve, solIn);
-    case CurveType.Linear:
-      return linearBuy(virtualSolReserve, virtualTokenReserve, solIn);
-    case CurveType.Exponential:
-      return exponentialBuy(virtualSolReserve, virtualTokenReserve, solIn);
+function assertPositive(value: BN, name: string): void {
+  if (value.lte(ZERO)) {
+    throw new Error(`${name} must be greater than zero`);
   }
 }
 
-/** Calculate SOL received for a given token input (before fees). */
-export function calculateSolOut(
-  virtualSolReserve: BN,
-  virtualTokenReserve: BN,
-  tokensIn: BN,
-  curveType: CurveType = CurveType.ConstantProduct
-): BN {
-  switch (curveType) {
-    case CurveType.ConstantProduct:
-      return constantProductSell(
-        virtualSolReserve,
-        virtualTokenReserve,
-        tokensIn
-      );
-    case CurveType.Linear:
-      return linearSell(virtualSolReserve, virtualTokenReserve, tokensIn);
-    case CurveType.Exponential:
-      return exponentialSell(virtualSolReserve, virtualTokenReserve, tokensIn);
-  }
-}
-
-/** Calculate current token price in SOL (with 9 decimal precision). */
-export function calculateCurrentPrice(
-  virtualSolReserve: BN,
-  virtualTokenReserve: BN
-): BN {
-  return virtualSolReserve.mul(PRICE_PRECISION).div(virtualTokenReserve);
-}
-
-/** Calculate market cap in lamports. */
-export function calculateMarketCap(
-  virtualSolReserve: BN,
-  virtualTokenReserve: BN,
-  totalSupply: BN
-): BN {
-  const price = calculateCurrentPrice(virtualSolReserve, virtualTokenReserve);
-  return price.mul(totalSupply).div(PRICE_PRECISION);
-}
-
-/** Calculate the fee amount for a given trade. */
 export function calculateFee(amount: BN): BN {
   return amount.muln(TOTAL_FEE_BPS).divn(BPS_DENOMINATOR);
 }
 
-/**
- * Estimate tokens received from a buy, accounting for the 3% fee.
- * The fee is deducted from the SOL input before the curve calculation.
- */
-export function estimateBuyTokensOut(
-  virtualSolReserve: BN,
-  virtualTokenReserve: BN,
-  solAmount: BN,
-  curveType: CurveType = CurveType.ConstantProduct
-): BN {
-  const fee = calculateFee(solAmount);
-  const solAfterFee = solAmount.sub(fee);
-  return calculateTokensOut(
-    virtualSolReserve,
-    virtualTokenReserve,
-    solAfterFee,
-    curveType
-  );
+function splitFee(totalFee: BN, shareBps: number): BN {
+  return totalFee.muln(shareBps).divn(TOTAL_FEE_BPS);
 }
 
-/**
- * Estimate SOL received from a sell, accounting for the 3% fee.
- * The fee is deducted from the SOL output after the curve calculation.
- */
-export function estimateSellSolOut(
-  virtualSolReserve: BN,
-  virtualTokenReserve: BN,
-  tokenAmount: BN,
-  curveType: CurveType = CurveType.ConstantProduct
-): BN {
-  const grossSol = calculateSolOut(
-    virtualSolReserve,
-    virtualTokenReserve,
-    tokenAmount,
-    curveType
-  );
-  const fee = calculateFee(grossSol);
-  return grossSol.sub(fee);
+export function calculateFeeBreakdown(amount: BN): FeeBreakdown {
+  const total = calculateFee(amount);
+  const creator = splitFee(total, CREATOR_FEE_BPS);
+  const curator = splitFee(total, CURATOR_FEE_BPS);
+  const growth = splitFee(total, GROWTH_FEE_BPS);
+  const platform = total.sub(creator).sub(curator).sub(growth);
+  return { total, platform, creator, curator, growth };
 }
 
-/** Calculate price impact of a trade as basis points. */
-export function calculatePriceImpactBps(
-  virtualSolReserve: BN,
-  virtualTokenReserve: BN,
-  solIn: BN,
-  curveType: CurveType = CurveType.ConstantProduct
+export function priceAtSupply(config: SigmoidConfig, soldSupply: BN): BN {
+  assertPositive(config.tokenSupply, "tokenSupply");
+  assertPositive(config.floorPriceLamports, "floorPriceLamports");
+  assertPositive(config.capPriceLamports, "capPriceLamports");
+  assertPositive(config.midpointSupply, "midpointSupply");
+  assertPositive(config.steepnessBps, "steepnessBps");
+  assertPositive(config.bandBps, "bandBps");
+
+  if (config.capPriceLamports.lte(config.floorPriceLamports)) {
+    throw new Error("capPriceLamports must be greater than floorPriceLamports");
+  }
+  if (
+    config.midpointSupply.gte(config.tokenSupply) ||
+    config.midpointSupply.lte(ZERO)
+  ) {
+    throw new Error("midpointSupply must be inside tokenSupply");
+  }
+
+  const clampedSupply = BN.min(soldSupply, config.tokenSupply);
+  const belowMidpoint = clampedSupply.lt(config.midpointSupply);
+  const distance = belowMidpoint
+    ? config.midpointSupply.sub(clampedSupply)
+    : clampedSupply.sub(config.midpointSupply);
+  const sideRange = belowMidpoint
+    ? config.midpointSupply
+    : config.tokenSupply.sub(config.midpointSupply);
+
+  const distanceBps = distance.mul(BPS).div(sideRange);
+  const adjustedDistanceBps = BN.min(
+    distanceBps.mul(config.steepnessBps).div(BPS),
+    BPS
+  );
+  const easedDistanceBps = smoothstepBps(adjustedDistanceBps);
+  const halfEased = easedDistanceBps.muln(5_000).div(BPS);
+  const sigmoidBps = belowMidpoint
+    ? new BN(5_000).sub(halfEased)
+    : new BN(5_000).add(halfEased);
+
+  return config.capPriceLamports
+    .sub(config.floorPriceLamports)
+    .mul(sigmoidBps)
+    .div(BPS)
+    .add(config.floorPriceLamports);
+}
+
+export function quoteSigmoidBuy(
+  config: SigmoidConfig,
+  soldSupply: BN,
+  solIn: BN
+): SigmoidQuote {
+  assertPositive(solIn, "solIn");
+
+  let remainingSol = solIn;
+  let supplyCursor = soldSupply;
+  let tokensOut = ZERO;
+  let solSpent = ZERO;
+  const band = bandSize(config);
+
+  for (let i = 0; i < MAX_SIGMOID_STEPS; i += 1) {
+    if (remainingSol.isZero() || supplyCursor.gte(config.tokenSupply)) break;
+
+    const price = priceAtSupply(config, supplyCursor);
+    const nextBand = nextBandEnd(supplyCursor, band, config.tokenSupply);
+    const bandRemaining = nextBand.sub(supplyCursor);
+    const affordableTokens = BN.min(
+      remainingSol.mul(TOKEN_UNIT).div(price),
+      bandRemaining
+    );
+
+    if (affordableTokens.isZero()) break;
+
+    const bandCost = ceilDiv(affordableTokens.mul(price), TOKEN_UNIT);
+    tokensOut = tokensOut.add(affordableTokens);
+    solSpent = solSpent.add(bandCost);
+    remainingSol = remainingSol.sub(bandCost);
+    supplyCursor = supplyCursor.add(affordableTokens);
+  }
+
+  if (tokensOut.isZero()) throw new Error("invalid sigmoid buy quote");
+  return { amountOut: tokensOut, grossSol: solSpent };
+}
+
+export function quoteSigmoidSell(
+  config: SigmoidConfig,
+  soldSupply: BN,
+  tokensIn: BN
+): SigmoidQuote {
+  assertPositive(tokensIn, "tokensIn");
+  if (tokensIn.gt(soldSupply)) throw new Error("tokensIn exceeds sold supply");
+
+  let remainingTokens = tokensIn;
+  let supplyCursor = soldSupply;
+  let solOut = ZERO;
+  const band = bandSize(config);
+
+  for (let i = 0; i < MAX_SIGMOID_STEPS; i += 1) {
+    if (remainingTokens.isZero() || supplyCursor.isZero()) break;
+
+    const currentBandStart = previousBandStart(supplyCursor, band);
+    const price = priceAtSupply(config, currentBandStart);
+    const bandAvailable = supplyCursor.sub(currentBandStart);
+    const bandTokens = BN.min(remainingTokens, bandAvailable);
+    const bandSol = bandTokens.mul(price).div(TOKEN_UNIT);
+
+    solOut = solOut.add(bandSol);
+    remainingTokens = remainingTokens.sub(bandTokens);
+    supplyCursor = supplyCursor.sub(bandTokens);
+  }
+
+  if (!remainingTokens.isZero() || solOut.isZero()) {
+    throw new Error("invalid sigmoid sell quote");
+  }
+  return { amountOut: solOut, grossSol: solOut };
+}
+
+export function quoteDlmmBuy(solIn: BN, priceLamportsPerToken: BN): BN {
+  assertPositive(solIn, "solIn");
+  assertPositive(priceLamportsPerToken, "priceLamportsPerToken");
+  const tokensOut = solIn.mul(TOKEN_UNIT).div(priceLamportsPerToken);
+  if (tokensOut.isZero()) throw new Error("invalid DLMM buy quote");
+  return tokensOut;
+}
+
+export function quoteDlmmSell(tokensIn: BN, priceLamportsPerToken: BN): BN {
+  assertPositive(tokensIn, "tokensIn");
+  assertPositive(priceLamportsPerToken, "priceLamportsPerToken");
+  const solOut = tokensIn.mul(priceLamportsPerToken).div(TOKEN_UNIT);
+  if (solOut.isZero()) throw new Error("invalid DLMM sell quote");
+  return solOut;
+}
+
+export function binIdForPrice(
+  priceLamportsPerToken: BN,
+  binStepBps: number
 ): number {
-  const priceBefore = calculateCurrentPrice(
-    virtualSolReserve,
-    virtualTokenReserve
-  );
-  const tokensOut = calculateTokensOut(
-    virtualSolReserve,
-    virtualTokenReserve,
-    solIn,
-    curveType
-  );
-  const newSolReserve = virtualSolReserve.add(solIn);
-  const newTokenReserve = virtualTokenReserve.sub(tokensOut);
-  const priceAfter = calculateCurrentPrice(newSolReserve, newTokenReserve);
-
-  if (priceBefore.isZero()) return 0;
-
-  return priceAfter
-    .sub(priceBefore)
-    .muln(BPS_DENOMINATOR)
-    .div(priceBefore)
-    .toNumber();
+  assertPositive(priceLamportsPerToken, "priceLamportsPerToken");
+  if (binStepBps <= 0) throw new Error("binStepBps must be positive");
+  return priceLamportsPerToken.divn(binStepBps).toNumber();
 }
+
+export function estimateSigmoidBuyTokensOut(
+  config: SigmoidConfig,
+  soldSupply: BN,
+  solAmount: BN
+): BN {
+  const fees = calculateFeeBreakdown(solAmount);
+  return quoteSigmoidBuy(config, soldSupply, solAmount.sub(fees.total))
+    .amountOut;
+}
+
+export function estimateSigmoidSellSolOut(
+  config: SigmoidConfig,
+  soldSupply: BN,
+  tokenAmount: BN
+): BN {
+  const grossSol = quoteSigmoidSell(config, soldSupply, tokenAmount).grossSol;
+  return grossSol.sub(calculateFee(grossSol));
+}
+
+export function estimateDlmmBuyTokensOut(
+  solAmount: BN,
+  priceLamportsPerToken: BN
+): BN {
+  const fees = calculateFeeBreakdown(solAmount);
+  return quoteDlmmBuy(solAmount.sub(fees.total), priceLamportsPerToken);
+}
+
+export function estimateDlmmSellSolOut(
+  tokenAmount: BN,
+  priceLamportsPerToken: BN
+): BN {
+  const grossSol = quoteDlmmSell(tokenAmount, priceLamportsPerToken);
+  return grossSol.sub(calculateFee(grossSol));
+}
+
+export function calculateSigmoidMarketCap(
+  config: SigmoidConfig,
+  soldSupply: BN
+): BN {
+  return priceAtSupply(config, soldSupply)
+    .mul(config.tokenSupply)
+    .div(TOKEN_UNIT);
+}
+
+function smoothstepBps(tBps: BN): BN {
+  const t = BN.min(tBps, BPS);
+  const t2 = t.mul(t);
+  const t3 = t2.mul(t);
+  const first = new BN(3).mul(t2).div(BPS);
+  const second = new BN(2).mul(t3).div(BPS.mul(BPS));
+  return first.sub(second);
+}
+
+function ceilDiv(numerator: BN, denominator: BN): BN {
+  if (denominator.isZero()) throw new Error("division by zero");
+  return numerator.add(denominator.subn(1)).div(denominator);
+}
+
+function bandSize(config: SigmoidConfig): BN {
+  const size = config.tokenSupply.mul(config.bandBps).div(BPS);
+  if (size.isZero()) throw new Error("invalid sigmoid band size");
+  return size;
+}
+
+function nextBandEnd(currentSupply: BN, band: BN, tokenSupply: BN): BN {
+  const next = currentSupply.div(band).addn(1).mul(band);
+  return BN.min(next, tokenSupply);
+}
+
+function previousBandStart(currentSupply: BN, band: BN): BN {
+  return currentSupply.subn(1).div(band).mul(band);
+}
+
+// Backwards-compatible names for callers that only need fee-aware estimates.
+export const estimateBuyTokensOut = estimateSigmoidBuyTokensOut;
+export const estimateSellSolOut = estimateSigmoidSellSolOut;
+export const calculateCurrentPrice = priceAtSupply;
+export const calculateMarketCap = calculateSigmoidMarketCap;

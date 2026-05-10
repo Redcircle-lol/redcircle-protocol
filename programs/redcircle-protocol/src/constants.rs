@@ -6,9 +6,11 @@ pub const POOL_SEED: &[u8] = b"pool";
 
 pub const POOL_SOL_VAULT_SEED: &[u8] = b"sol_vault";
 
-pub const FEE_VAULT_SEED: &[u8] = b"fee_vault";
+pub const MARKET_STATE_SEED: &[u8] = b"market";
 
-pub const REFERRAL_SEED: &[u8] = b"referral";
+pub const BIN_SEED: &[u8] = b"bin";
+
+pub const POSITION_SEED: &[u8] = b"position";
 
 pub const LP_MINT_SEED: &[u8] = b"lp_mint";
 
@@ -23,11 +25,11 @@ pub const CREATOR_FEE_BPS: u64 = 100;
 /// Platform (RedCircle) fee: 1% (100 basis points)
 pub const PLATFORM_FEE_BPS: u64 = 100;
 
-/// Inviter (referrer) fee: 0.5% (50 basis points)
-pub const INVITER_FEE_BPS: u64 = 50;
-
 /// Curator fee: 0.5% (50 basis points)
 pub const CURATOR_FEE_BPS: u64 = 50;
+
+/// Growth fee: 0.5% (50 basis points)
+pub const GROWTH_FEE_BPS: u64 = 50;
 
 /// Basis points denominator (100% = 10000 bps)
 pub const BPS_DENOMINATOR: u64 = 10000;
@@ -35,15 +37,31 @@ pub const BPS_DENOMINATOR: u64 = 10000;
 /// Pool creation fee: 1% (100 points)
 pub const POOL_CREATION_FEE: u64 = 100;
 
-// BONDING CURVE DEFAULTS
+// SIGMOID BOOTSTRAP DEFAULTS
 
-/// Default initial virtual SOL reserve (in lamports)
-/// 30 SOL = 30_000_000_000 lamports
-pub const DEFAULT_INITIAL_VIRTUAL_SOL: u64 = 30_000_000_000;
+/// Default floor price in lamports per whole post token.
+pub const DEFAULT_SIGMOID_FLOOR_PRICE: u64 = 10;
 
-/// Default initial virtual token reserve
-/// 1 billion tokens with 6 decimals = 1_000_000_000_000_000
-pub const DEFAULT_INITIAL_VIRTUAL_TOKEN: u64 = 1_000_000_000_000_000;
+/// Default cap price in lamports per whole post token.
+pub const DEFAULT_SIGMOID_CAP_PRICE: u64 = 10_000;
+
+/// Default sigmoid steepness. 10_000 means use the base smoothstep curve.
+pub const DEFAULT_SIGMOID_STEEPNESS_BPS: u64 = 10_000;
+
+/// Token supply sold before the pool can migrate to DLMM.
+pub const DEFAULT_MIGRATION_SUPPLY_THRESHOLD_BPS: u16 = 2_500;
+
+/// Minimum bootstrap SOL liquidity required before DLMM migration.
+pub const DEFAULT_MIGRATION_MIN_SOL_RESERVE: u64 = 5_000_000_000;
+
+/// Default DLMM bin step: 1%.
+pub const DEFAULT_DLMM_BIN_STEP_BPS: u16 = 100;
+
+/// Maximum bins a single sigmoid quote may cross.
+pub const MAX_SIGMOID_STEPS: u16 = 128;
+
+/// Sigmoid quote band size as a fraction of total supply.
+pub const SIGMOID_BAND_BPS: u64 = 100;
 
 /// Default token total supply
 /// 1 billion tokens with 6 decimals
@@ -51,6 +69,9 @@ pub const DEFAULT_TOKEN_SUPPLY: u64 = 1_000_000_000_000_000;
 
 /// Token decimals for RPT tokens
 pub const TOKEN_DECIMALS: u8 = 6;
+
+/// One whole token in base units.
+pub const TOKEN_UNIT: u64 = 1_000_000;
 
 // ANTI-BOT / LAUNCH PROTECTION
 

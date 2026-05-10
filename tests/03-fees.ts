@@ -1,382 +1,149 @@
 import { expect } from "chai";
-import {
-  SystemProgram,
-  LAMPORTS_PER_SOL,
-} from "@solana/web3.js";
-import {
-  TOKEN_PROGRAM_ID,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import BN from "bn.js";
 
 import {
-  program,
-  connection,
   admin,
-  treasury,
-  curator,
-  user,
+  client,
+  connection,
   creator,
-  inviter,
+  curator,
+  growthRecipient,
   nonAdmin,
-  configPda,
   postId,
-  poolPda,
-  tokenMint,
-  poolSolVault,
-  feeVault,
-  getPoolTokenVault,
-  getUserTokenAccount,
+  sendIx,
+  treasury,
+  user,
 } from "./helpers";
 
-import {
-  findReferralPda,
-  findInviterStatsPda,
-} from "../sdk/src";
+import { calculateFeeBreakdown } from "../sdk/src";
 
-describe("fees & referrals", () => {
-  // =========================================================================
-  // SET CREATOR & CLAIM CREATOR FEES
-  // =========================================================================
-  describe("set_creator & claim_creator_fees", () => {
-    it("admin sets creator for pool", async () => {
-      await program.methods
-        .setCreator()
-        .accountsStrict({
-          authority: admin.publicKey,
-          pool: poolPda,
-          config: configPda,
-          creator: creator.publicKey,
-        })
-        .rpc();
+describe("fees", () => {
+  it("admin sets creator for pool", async () => {
+    await sendIx(
+      await client.setCreator(admin.publicKey, postId, creator.publicKey)
+    );
 
-      const pool = await program.account.pool.fetch(poolPda);
-      expect(pool.creator.toBase58()).to.equal(creator.publicKey.toBase58());
-    });
-
-    it("non-admin cannot set creator", async () => {
-      try {
-        await program.methods
-          .setCreator()
-          .accountsStrict({
-            authority: nonAdmin.publicKey,
-            pool: poolPda,
-            config: configPda,
-            creator: creator.publicKey,
-          })
-          .signers([nonAdmin])
-          .rpc();
-        expect.fail("Should have thrown");
-      } catch (err: any) {
-        expect(err.toString()).to.include("Unauthorized");
-      }
-    });
-
-    it("creator claims accumulated fees", async () => {
-      const pool = await program.account.pool.fetch(poolPda);
-      const unclaimedBefore = pool.unclaimedCreatorFees.toNumber();
-
-      if (unclaimedBefore > 0) {
-        const creatorBalBefore = await connection.getBalance(creator.publicKey);
-
-        await program.methods
-          .claimCreatorFees()
-          .accountsStrict({
-            creator: creator.publicKey,
-            pool: poolPda,
-            poolSolVault,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([creator])
-          .rpc();
-
-        const poolAfter = await program.account.pool.fetch(poolPda);
-        expect(poolAfter.unclaimedCreatorFees.toNumber()).to.equal(0);
-
-        const creatorBalAfter = await connection.getBalance(creator.publicKey);
-        expect(creatorBalAfter).to.be.greaterThan(creatorBalBefore);
-      }
-    });
-
-    it("creator cannot claim when no fees", async () => {
-      try {
-        await program.methods
-          .claimCreatorFees()
-          .accountsStrict({
-            creator: creator.publicKey,
-            pool: poolPda,
-            poolSolVault,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([creator])
-          .rpc();
-        expect.fail("Should have thrown");
-      } catch (err: any) {
-        expect(err.toString()).to.include("NoFeesToClaim");
-      }
-    });
+    const pool = await client.fetchPool(postId);
+    expect(pool.creator.toBase58()).to.equal(creator.publicKey.toBase58());
   });
 
-  // =========================================================================
-  // CLAIM CURATOR FEES
-  // =========================================================================
-  describe("claim_curator_fees", () => {
-    before(async () => {
-      // Generate some fees via a buy
-      const poolTokenVault = await getPoolTokenVault();
-      const userTokenAccount = await getUserTokenAccount(user.publicKey);
+  it("non-admin cannot set creator", async () => {
+    try {
+      await sendIx(
+        await client.setCreator(nonAdmin.publicKey, postId, creator.publicKey),
+        [nonAdmin]
+      );
+      expect.fail("setCreator should have failed");
+    } catch (err: any) {
+      expect(err.toString()).to.include("Unauthorized");
+    }
+  });
 
-      await program.methods
-        .buy({
-          solAmount: new BN(2 * LAMPORTS_PER_SOL),
-          minTokensOut: new BN(0),
-        })
-        .accountsStrict({
+  it("records creator, curator, growth, and platform fee metrics", async () => {
+    const marketBefore = await client.fetchMarketState(postId);
+    const poolBefore = await client.fetchPool(postId);
+    const amount = new BN(2 * LAMPORTS_PER_SOL);
+    const fees = calculateFeeBreakdown(amount);
+
+    await sendIx(
+      await client.buy(
+        {
           user: user.publicKey,
-          config: configPda,
-          pool: poolPda,
-          tokenMint,
-          poolTokenVault,
-          poolSolVault,
-          userTokenAccount,
+          postId,
           treasury: treasury.publicKey,
           curator: curator.publicKey,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
-        })
-        .signers([user])
-        .rpc();
-    });
+        },
+        { solAmount: amount, minTokensOut: new BN(0) }
+      ),
+      [user]
+    );
 
-    it("curator cannot claim curator_fees (sent directly via buy)", async () => {
-      const pool = await program.account.pool.fetch(poolPda);
+    const poolAfter = await client.fetchPool(postId);
+    const marketAfter = await client.fetchMarketState(postId);
 
-      if (pool.unclaimedCuratorFees.toNumber() === 0) {
-        try {
-          await program.methods
-            .claimCuratorFees()
-            .accountsStrict({
-              curator: curator.publicKey,
-              pool: poolPda,
-              poolSolVault,
-              systemProgram: SystemProgram.programId,
-            })
-            .signers([curator])
-            .rpc();
-          expect.fail("Should have thrown");
-        } catch (err: any) {
-          expect(err.toString()).to.include("NoFeesToClaim");
-        }
-      } else {
-        await program.methods
-          .claimCuratorFees()
-          .accountsStrict({
-            curator: curator.publicKey,
-            pool: poolPda,
-            poolSolVault,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([curator])
-          .rpc();
-
-        const poolAfter = await program.account.pool.fetch(poolPda);
-        expect(poolAfter.unclaimedCuratorFees.toNumber()).to.equal(0);
-      }
-    });
+    expect(poolAfter.unclaimedCreatorFees.toString()).to.equal(
+      poolBefore.unclaimedCreatorFees.add(fees.creator).toString()
+    );
+    expect(poolAfter.unclaimedCuratorFees.toString()).to.equal(
+      poolBefore.unclaimedCuratorFees.add(fees.curator).toString()
+    );
+    expect(poolAfter.unclaimedGrowthFees.toString()).to.equal(
+      poolBefore.unclaimedGrowthFees.add(fees.growth).toString()
+    );
+    expect(marketAfter.platformFeesEarned.toString()).to.equal(
+      marketBefore.platformFeesEarned.add(fees.platform).toString()
+    );
+    expect(marketAfter.creatorFeesEarned.toString()).to.equal(
+      marketBefore.creatorFeesEarned.add(fees.creator).toString()
+    );
+    expect(marketAfter.curatorFeesEarned.toString()).to.equal(
+      marketBefore.curatorFeesEarned.add(fees.curator).toString()
+    );
+    expect(marketAfter.growthFeesEarned.toString()).to.equal(
+      marketBefore.growthFeesEarned.add(fees.growth).toString()
+    );
   });
 
-  // =========================================================================
-  // REFERRAL
-  // =========================================================================
-  describe("register_referral", () => {
-    it("registers a referral", async () => {
-      const [referralPda] = findReferralPda(user.publicKey, program.programId);
-      const [inviterStatsPda] = findInviterStatsPda(
-        inviter.publicKey,
-        program.programId
-      );
+  it("creator claims accumulated fees", async () => {
+    const poolBefore = await client.fetchPool(postId);
+    expect(poolBefore.unclaimedCreatorFees.gt(new BN(0))).to.equal(true);
+    const balanceBefore = await connection.getBalance(creator.publicKey);
 
-      await program.methods
-        .registerReferral()
-        .accountsStrict({
-          user: user.publicKey,
-          inviter: inviter.publicKey,
-          referral: referralPda,
-          inviterStats: inviterStatsPda,
-          systemProgram: SystemProgram.programId,
-        })
-        .signers([user])
-        .rpc();
+    await sendIx(await client.claimCreatorFees(creator.publicKey, postId), [
+      creator,
+    ]);
 
-      const referral = await program.account.referral.fetch(referralPda);
-      expect(referral.user.toBase58()).to.equal(user.publicKey.toBase58());
-      expect(referral.inviter.toBase58()).to.equal(inviter.publicKey.toBase58());
-      expect(referral.totalFeesGenerated.toNumber()).to.equal(0);
-      expect(referral.tradeCount.toNumber()).to.equal(0);
-
-      const inviterStats = await program.account.inviterStats.fetch(
-        inviterStatsPda
-      );
-      expect(inviterStats.inviter.toBase58()).to.equal(
-        inviter.publicKey.toBase58()
-      );
-      expect(inviterStats.totalReferrals.toNumber()).to.equal(1);
-    });
-
-    it("cannot register duplicate referral", async () => {
-      const [referralPda] = findReferralPda(user.publicKey, program.programId);
-      const [inviterStatsPda] = findInviterStatsPda(
-        inviter.publicKey,
-        program.programId
-      );
-
-      try {
-        await program.methods
-          .registerReferral()
-          .accountsStrict({
-            user: user.publicKey,
-            inviter: inviter.publicKey,
-            referral: referralPda,
-            inviterStats: inviterStatsPda,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([user])
-          .rpc();
-        expect.fail("Should have thrown");
-      } catch (err: any) {
-        expect(err).to.exist;
-      }
-    });
-
-    it("cannot self-refer", async () => {
-      const { Keypair } = await import("@solana/web3.js");
-      const { airdrop } = await import("./helpers");
-      const selfRefUser = Keypair.generate();
-      await airdrop(selfRefUser.publicKey);
-
-      const [referralPda] = findReferralPda(
-        selfRefUser.publicKey,
-        program.programId
-      );
-      const [inviterStatsPda] = findInviterStatsPda(
-        selfRefUser.publicKey,
-        program.programId
-      );
-
-      try {
-        await program.methods
-          .registerReferral()
-          .accountsStrict({
-            user: selfRefUser.publicKey,
-            inviter: selfRefUser.publicKey,
-            referral: referralPda,
-            inviterStats: inviterStatsPda,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([selfRefUser])
-          .rpc();
-        expect.fail("Should have thrown");
-      } catch (err: any) {
-        expect(err.toString()).to.include("SelfReferral");
-      }
-    });
+    const poolAfter = await client.fetchPool(postId);
+    const balanceAfter = await connection.getBalance(creator.publicKey);
+    expect(poolAfter.unclaimedCreatorFees.toNumber()).to.equal(0);
+    expect(balanceAfter).to.be.greaterThan(balanceBefore);
   });
 
-  // =========================================================================
-  // REFERRAL TRADE FEE ROUTING
-  // =========================================================================
-  describe("referral trade fee routing", () => {
-    it("referral exists and tracks data", async () => {
-      const referralPda = findReferralPda(user.publicKey, program.programId)[0];
-      const referral = await program.account.referral.fetch(referralPda);
-      expect(referral.user.toBase58()).to.equal(user.publicKey.toBase58());
-      expect(referral.inviter.toBase58()).to.equal(inviter.publicKey.toBase58());
-    });
+  it("curator claims accumulated fees", async () => {
+    const poolBefore = await client.fetchPool(postId);
+    expect(poolBefore.unclaimedCuratorFees.gt(new BN(0))).to.equal(true);
+    const balanceBefore = await connection.getBalance(curator.publicKey);
 
-    it("inviter stats exist after referral registration", async () => {
-      const [inviterStatsPda] = findInviterStatsPda(
-        inviter.publicKey,
-        program.programId
-      );
-      const stats = await program.account.inviterStats.fetch(inviterStatsPda);
-      expect(stats.inviter.toBase58()).to.equal(inviter.publicKey.toBase58());
-      expect(stats.totalReferrals.toNumber()).to.be.greaterThanOrEqual(1);
-    });
+    await sendIx(await client.claimCuratorFees(curator.publicKey, postId), [
+      curator,
+    ]);
+
+    const poolAfter = await client.fetchPool(postId);
+    const balanceAfter = await connection.getBalance(curator.publicKey);
+    expect(poolAfter.unclaimedCuratorFees.toNumber()).to.equal(0);
+    expect(balanceAfter).to.be.greaterThan(balanceBefore);
   });
 
-  // =========================================================================
-  // CLAIM INVITER FEES
-  // =========================================================================
-  describe("claim_inviter_fees", () => {
-    it("inviter claims accumulated fees or gets NoFeesToClaim", async () => {
-      const [inviterStatsPda] = findInviterStatsPda(
-        inviter.publicKey,
-        program.programId
-      );
-      const stats = await program.account.inviterStats.fetch(inviterStatsPda);
+  it("admin claims growth fees to a selected recipient", async () => {
+    const poolBefore = await client.fetchPool(postId);
+    expect(poolBefore.unclaimedGrowthFees.gt(new BN(0))).to.equal(true);
+    const balanceBefore = await connection.getBalance(
+      growthRecipient.publicKey
+    );
 
-      if (stats.unclaimedFees.toNumber() > 0) {
-        const inviterBalBefore = await connection.getBalance(inviter.publicKey);
+    await sendIx(
+      await client.claimGrowthFees(
+        admin.publicKey,
+        postId,
+        growthRecipient.publicKey
+      )
+    );
 
-        await program.methods
-          .claimInviterFees()
-          .accountsStrict({
-            inviter: inviter.publicKey,
-            inviterStats: inviterStatsPda,
-            feeVault,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([inviter])
-          .rpc();
+    const poolAfter = await client.fetchPool(postId);
+    const balanceAfter = await connection.getBalance(growthRecipient.publicKey);
+    expect(poolAfter.unclaimedGrowthFees.toNumber()).to.equal(0);
+    expect(balanceAfter).to.be.greaterThan(balanceBefore);
+  });
 
-        const statsAfter = await program.account.inviterStats.fetch(
-          inviterStatsPda
-        );
-        expect(statsAfter.unclaimedFees.toNumber()).to.equal(0);
-
-        const inviterBalAfter = await connection.getBalance(inviter.publicKey);
-        expect(inviterBalAfter).to.be.greaterThan(inviterBalBefore);
-      } else {
-        try {
-          await program.methods
-            .claimInviterFees()
-            .accountsStrict({
-              inviter: inviter.publicKey,
-              inviterStats: inviterStatsPda,
-              feeVault,
-              systemProgram: SystemProgram.programId,
-            })
-            .signers([inviter])
-            .rpc();
-          expect.fail("Should have thrown");
-        } catch (err: any) {
-          expect(err.toString()).to.include("NoFeesToClaim");
-        }
-      }
-    });
-
-    it("non-inviter cannot claim someone else's fees", async () => {
-      const [inviterStatsPda] = findInviterStatsPda(
-        inviter.publicKey,
-        program.programId
-      );
-
-      try {
-        await program.methods
-          .claimInviterFees()
-          .accountsStrict({
-            inviter: nonAdmin.publicKey,
-            inviterStats: inviterStatsPda,
-            feeVault,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([nonAdmin])
-          .rpc();
-        expect.fail("Should have thrown");
-      } catch (err: any) {
-        expect(err).to.exist;
-      }
-    });
+  it("creator cannot claim twice without new fees", async () => {
+    try {
+      await sendIx(await client.claimCreatorFees(creator.publicKey, postId), [
+        creator,
+      ]);
+      expect.fail("claimCreatorFees should have failed");
+    } catch (err: any) {
+      expect(err.toString()).to.include("NoFeesToClaim");
+    }
   });
 });

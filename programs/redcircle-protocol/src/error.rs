@@ -28,6 +28,15 @@ pub enum RedCircleError {
     #[msg("Invalid pool status for this operation")]
     InvalidPoolStatus,
 
+    #[msg("Pool must be migrated before additional trades")]
+    MigrationRequired,
+
+    #[msg("Pool has already migrated")]
+    AlreadyMigrated,
+
+    #[msg("Pool has not met migration requirements")]
+    MigrationConditionsNotMet,
+
     #[msg("Post ID is too long")]
     PostIdTooLong,
 
@@ -75,6 +84,15 @@ pub enum RedCircleError {
     #[msg("Invalid calculation result")]
     InvalidCalculation,
 
+    #[msg("Invalid sigmoid configuration")]
+    InvalidSigmoidConfig,
+
+    #[msg("Invalid DLMM bin")]
+    InvalidDlmmBin,
+
+    #[msg("Insufficient DLMM bin liquidity")]
+    InsufficientBinLiquidity,
+
     // FEE ERRORS (6060-6069)
     #[msg("No fees to claim")]
     NoFeesToClaim,
@@ -84,19 +102,6 @@ pub enum RedCircleError {
 
     #[msg("Fee calculation error")]
     FeeCalculationError,
-
-    // REFERRAL ERRORS (6070-6079)
-    #[msg("Referral already registered")]
-    ReferralAlreadyRegistered,
-
-    #[msg("Cannot refer yourself")]
-    SelfReferral,
-
-    #[msg("Inviter not found")]
-    InviterNotFound,
-
-    #[msg("Invalid referral")]
-    InvalidReferral,
 
     // TOKEN ERRORS (6080-6089)
     #[msg("Token name too long")]

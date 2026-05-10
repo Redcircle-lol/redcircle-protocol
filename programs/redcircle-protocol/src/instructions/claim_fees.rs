@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::constants::*;
 use crate::error::RedCircleError;
-use crate::state::{Pool, InviterStats};
+use crate::state::Pool;
 
 /// Claim creator fees from a pool
 /// Only callable by the verified creator (post author)
@@ -125,62 +125,73 @@ pub fn claim_curator_fees_handler(ctx: Context<ClaimCuratorFees>) -> Result<()> 
     Ok(())
 }
 
-/// Claim inviter fees
+/// Claim growth fees from a pool to an admin-selected wallet.
 #[derive(Accounts)]
-pub struct ClaimInviterFees<'info> {
-    /// The inviter claiming fees
+pub struct ClaimGrowthFees<'info> {
+    /// Protocol admin approving the growth payout.
     #[account(mut)]
-    pub inviter: Signer<'info>,
+    pub admin: Signer<'info>,
 
-    /// Inviter's stats account
+    #[account(
+        seeds = [CONFIG_SEED],
+        bump = config.bump,
+        constraint = config.admin == admin.key() @ RedCircleError::Unauthorized
+    )]
+    pub config: Account<'info, crate::state::Config>,
+
+    /// The pool to claim growth fees from.
     #[account(
         mut,
-        seeds = [b"inviter_stats", inviter.key().as_ref()],
-        bump = inviter_stats.bump,
-        constraint = inviter_stats.inviter == inviter.key() @ RedCircleError::Unauthorized
+        seeds = [POOL_SEED, pool.post_id.as_bytes()],
+        bump = pool.bump
     )]
-    pub inviter_stats: Account<'info, InviterStats>,
+    pub pool: Account<'info, Pool>,
 
-    /// Fee vault that holds accumulated inviter fees
-    /// CHECK: PDA that holds fees
+    /// Pool's SOL vault.
     #[account(
         mut,
-        seeds = [FEE_VAULT_SEED],
-        bump
+        seeds = [POOL_SOL_VAULT_SEED, pool.key().as_ref()],
+        bump = pool.sol_vault_bump
     )]
-    pub fee_vault: SystemAccount<'info>,
+    pub pool_sol_vault: SystemAccount<'info>,
+
+    /// CHECK: Admin-selected wallet that receives growth fees.
+    #[account(mut)]
+    pub growth_recipient: UncheckedAccount<'info>,
 
     pub system_program: Program<'info, System>,
 }
 
-pub fn claim_inviter_fees_handler(ctx: Context<ClaimInviterFees>) -> Result<()> {
-    let inviter_stats = &mut ctx.accounts.inviter_stats;
+pub fn claim_growth_fees_handler(ctx: Context<ClaimGrowthFees>) -> Result<()> {
+    let pool = &mut ctx.accounts.pool;
 
-    let claimable = inviter_stats.unclaimed_fees;
+    let claimable = pool.unclaimed_growth_fees;
     require!(claimable > 0, RedCircleError::NoFeesToClaim);
 
-    // Build fee vault PDA signer seeds
-    let fee_vault_bump = ctx.bumps.fee_vault;
-    let fee_vault_seeds: &[&[u8]] = &[FEE_VAULT_SEED, &[fee_vault_bump]];
-    let fee_vault_signer = &[fee_vault_seeds];
+    let pool_key = pool.key();
+    let sol_vault_bump = pool.sol_vault_bump;
+    let sol_vault_seeds: &[&[u8]] = &[POOL_SOL_VAULT_SEED, pool_key.as_ref(), &[sol_vault_bump]];
+    let sol_vault_signer = &[sol_vault_seeds];
 
-    // Transfer SOL from fee vault to inviter via CPI
     anchor_lang::system_program::transfer(
         CpiContext::new_with_signer(
             ctx.accounts.system_program.to_account_info(),
             anchor_lang::system_program::Transfer {
-                from: ctx.accounts.fee_vault.to_account_info(),
-                to: ctx.accounts.inviter.to_account_info(),
+                from: ctx.accounts.pool_sol_vault.to_account_info(),
+                to: ctx.accounts.growth_recipient.to_account_info(),
             },
-            fee_vault_signer,
+            sol_vault_signer,
         ),
         claimable,
     )?;
 
-    // Reset unclaimed fees
-    inviter_stats.unclaimed_fees = 0;
+    pool.unclaimed_growth_fees = 0;
 
-    msg!("Inviter claimed {} lamports in fees", claimable);
+    msg!(
+        "Growth recipient {} claimed {} lamports in fees",
+        ctx.accounts.growth_recipient.key(),
+        claimable
+    );
 
     Ok(())
 }
@@ -219,11 +230,7 @@ pub fn set_creator_handler(ctx: Context<SetCreator>) -> Result<()> {
 
     pool.creator = ctx.accounts.creator.key();
 
-    msg!(
-        "Creator set for pool {}: {}",
-        pool.post_id,
-        pool.creator
-    );
+    msg!("Creator set for pool {}: {}", pool.post_id, pool.creator);
 
     Ok(())
 }
