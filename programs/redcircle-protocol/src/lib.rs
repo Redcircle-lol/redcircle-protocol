@@ -12,7 +12,7 @@ pub use instructions::*;
 pub use math::*;
 pub use state::*;
 
-declare_id!("8vdyo4hfP1ZjmnnEuGrqhHNupt2ZjZ7LmfRtU4kCXS5L");
+declare_id!("7rWhaTDG6vnJMTbcPHMLXeebUbFjSLJiN7NLaZtefR9g");
 
 #[program]
 pub mod redcircle_protocol {

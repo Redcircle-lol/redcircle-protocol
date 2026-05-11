@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-redcircle_protocol = "8vdyo4hfP1ZjmnnEuGrqhHNupt2ZjZ7LmfRtU4kCXS5L"
+redcircle_protocol = "7rWhaTDG6vnJMTbcPHMLXeebUbFjSLJiN7NLaZtefR9g"
 
 [registry]
 url = "https://api.apr.dev"
