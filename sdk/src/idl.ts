@@ -1,6 +1,6 @@
 /** Auto-generated IDL export for the RedCircle Protocol program. */
 const IDL = {
-  address: "8vdyo4hfP1ZjmnnEuGrqhHNupt2ZjZ7LmfRtU4kCXS5L",
+  address: "7rWhaTDG6vnJMTbcPHMLXeebUbFjSLJiN7NLaZtefR9g",
   metadata: {
     name: "redcircle_protocol",
     version: "0.1.0",

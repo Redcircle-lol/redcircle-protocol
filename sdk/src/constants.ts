@@ -2,7 +2,7 @@ import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 
 export const PROGRAM_ID = new PublicKey(
-  "8vdyo4hfP1ZjmnnEuGrqhHNupt2ZjZ7LmfRtU4kCXS5L"
+  "7rWhaTDG6vnJMTbcPHMLXeebUbFjSLJiN7NLaZtefR9g"
 );
 
 // PDA seeds
